@@ -1,0 +1,27 @@
+cat > .gitignore <<'EOF'
+# Dependencies
+node_modules/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Frontend builds
+.next/
+out/
+dist/
+build/
+.vercel/
+
+# Rust / Solana build artifacts
+target/
+.anchor/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+EOF
