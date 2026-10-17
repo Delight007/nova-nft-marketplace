@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   FiCheckCircle,
   FiClock,
@@ -8,6 +9,7 @@ import {
   FiTag,
   FiUsers,
 } from "react-icons/fi";
+import { SiSolana } from "react-icons/si";
 import { rarityColors } from "./collectionItemsData";
 import type { NFTItem } from "./collectionItemsData";
 
@@ -46,14 +48,16 @@ export default function CollectionItemCard({
             : "h-28 w-36 shrink-0 rounded-lg sm:h-32 sm:w-44"
         }`}
       >
-        <img
+        <Image
           src={item.image}
           alt={item.name}
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
+          fill
+          sizes={
+            gridView
+              ? "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+              : "176px"
+          }
+          className="object-cover transition duration-500 group-hover:scale-105"
         />
 
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020817]/35 via-transparent to-[#020817]/10" />
@@ -105,9 +109,10 @@ export default function CollectionItemCard({
         <div className="mt-3 flex items-center justify-between gap-2">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-purple-600 to-cyan-500 text-[10px] font-bold text-white">
-                ◎
-              </span>
+              <SiSolana
+                aria-label="Solana"
+                className="shrink-0 text-sm text-cyan-400"
+              />
               <span className="text-sm font-semibold text-white">
                 {item.price.toFixed(1)} SOL
               </span>

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  FiGrid,
-  FiList,
-  FiSearch,
-  FiSliders,
-  FiX,
-} from "react-icons/fi";
+import { FiGrid, FiList, FiSearch, FiSliders, FiX } from "react-icons/fi";
 import type { CollectionItemsTab } from "./collectionItemsData";
 
 type CollectionItemsBarsProps = {
@@ -79,7 +73,7 @@ export default function CollectionItemsBars({
       {activeTab === "Items" && (
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 pt-5">
               <label className="flex min-w-[150px] max-w-sm flex-1 items-center gap-2 rounded-lg border border-[#1b2e4c] bg-[#071326] px-3 py-2.5">
                 <FiSearch className="shrink-0 text-slate-500" />
                 <input
