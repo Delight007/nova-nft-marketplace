@@ -127,7 +127,7 @@ export default function ProfileHero() {
                 </div>
 
                 {/* BIO */}
-                <p className="mt-4 max-w-[620px] text-sm leading-6 text-slate-300">
+                <p className="mt-4 max-w-[400px] text-sm leading-6 text-slate-300">
                   {creator.bio}
                 </p>
 
@@ -165,11 +165,11 @@ export default function ProfileHero() {
 
               {/* ACTIONS */}
               <div className="flex items-center gap-3">
-                <button className="rounded-xl bg-gradient-to-r from-purple-600 to-cyan-400 px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90">
+                <button className="w-auto rounded-xl bg-gradient-to-r from-purple-600 to-cyan-400 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">
                   Edit Profile
                 </button>
 
-                <button className="rounded-xl border border-purple-500/60 bg-black/20 px-6 py-3 text-sm font-semibold text-white transition hover:bg-purple-500/10">
+                <button className="rounded-xl border border-purple-500/60 bg-black/20 px-4 py-3 text-sm font-semibold text-white transition hover:bg-purple-500/10">
                   Follow
                 </button>
 

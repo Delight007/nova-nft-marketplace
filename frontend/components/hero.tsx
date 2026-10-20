@@ -6,7 +6,7 @@ import FeaturedNFTSlider from "./featuredNFTSlider";
 
 export default function Hero() {
   return (
-    <section className="container lg:py-15 py-10 relative overflow-hidden border-b border-white/10">
+    <section className="container font-sans lg:py-15 py-10 relative overflow-hidden border-b border-white/10">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-32 -top-36 h-[440px] w-[560px] rounded-full bg-[radial-gradient(ellipse,rgba(37,99,235,0.2)_0%,rgba(37,99,235,0.09)_38%,transparent_72%)] blur-2xl"

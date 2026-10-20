@@ -1,10 +1,12 @@
 import {
   FiEye,
   FiHeart,
+  FiMessageCircle,
   FiMoreHorizontal,
   FiShare2,
   FiTag,
 } from "react-icons/fi";
+import { SiSolana } from "react-icons/si";
 import { nft } from "./nftDetailsData";
 
 type NFTPurchaseCardProps = {
@@ -40,9 +42,7 @@ export default function NFTPurchaseCard({
         <div>
           <p className="text-sm text-blue-400">Current Price</p>
           <div className="mt-1 flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-violet-600 text-lg font-black">
-              ≋
-            </span>
+            <SiSolana aria-hidden="true" className="h-7 w-7 text-[#14F195]" />
             <span className="text-2xl font-semibold">{nft.price} SOL</span>
           </div>
           <p className="ml-10 mt-1 text-xs text-slate-500">{nft.usdPrice}</p>
@@ -67,7 +67,7 @@ export default function NFTPurchaseCard({
           onClick={onOfferOpen}
           className="flex items-center justify-center gap-2 rounded-xl border border-cyan-500/70 bg-[#050e20] px-3 py-3.5 text-sm font-semibold transition hover:bg-[#0b1c35]"
         >
-          <FiTag /> Make Offer
+          <FiMessageCircle /> Make Offer
         </button>
       </div>
 

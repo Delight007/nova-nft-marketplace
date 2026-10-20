@@ -103,14 +103,14 @@ export default function CreatePage() {
                 SOLANA NFT MARKETPLACE
               </div>
 
-              <h1 className="text-5xl font-bold tracking-tight md:text-6xl">
+              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
                 Create{" "}
                 <span className="bg-gradient-to-r from-purple-500 via-fuchsia-500 to-cyan-400 bg-clip-text text-transparent">
                   NFT
                 </span>
               </h1>
 
-              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 md:text-base">
+              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 md:text-sm font-medium">
                 Turn your creativity into digital ownership. Mint your NFT on
                 Solana and bring your vision to the blockchain.
               </p>

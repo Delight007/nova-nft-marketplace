@@ -1,3 +1,4 @@
+import { FiTag } from "react-icons/fi";
 import { activity } from "./nftDetailsData";
 
 export default function NFTActivityTab() {
@@ -19,7 +20,17 @@ export default function NFTActivityTab() {
           <tbody>
             {activity.map((item) => (
               <tr key={item.title} className="border-t border-[#172c4c]">
-                <td className="py-4 font-medium">{item.title}</td>
+                <td className="py-4 font-medium">
+                  <span className="flex items-center gap-2">
+                    {item.type === "list" && (
+                      <FiTag
+                        aria-hidden="true"
+                        className="text-cyan-300"
+                      />
+                    )}
+                    {item.title}
+                  </span>
+                </td>
                 <td className="py-4 text-blue-200">{item.detail}</td>
                 <td className="py-4 text-blue-400">{item.date}</td>
               </tr>

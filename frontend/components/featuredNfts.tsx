@@ -54,7 +54,7 @@ export default function FeaturedNFTs() {
   }
 
   return (
-    <section className="border-b border-white/10 bg-[#030917]">
+    <section className="font-sans border-b border-white/10 bg-[#030917]">
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-4 px-6 py-5 lg:grid-cols-[minmax(0,3fr)_minmax(220px,1fr)] lg:px-10">
         <div className="min-w-0 rounded-xl ">
           {/* Section heading */}

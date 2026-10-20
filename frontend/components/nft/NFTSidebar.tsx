@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { FaXTwitter } from "react-icons/fa6";
 import { FiArrowRight, FiCheck, FiCopy, FiLink } from "react-icons/fi";
+import { SiDiscord, SiSolana } from "react-icons/si";
 import { images, nft } from "./nftDetailsData";
 
 type NFTSidebarProps = {
@@ -58,11 +60,7 @@ export default function NFTSidebar({ onAction, onShare }: NFTSidebarProps) {
             value={nft.marketplaceFee}
           />
           <DetailRow
-            icon={
-              <span className="bg-gradient-to-r from-cyan-400 to-violet-500 bg-clip-text text-xl font-black text-transparent">
-                ≋
-              </span>
-            }
+            icon={<SiSolana aria-hidden="true" className="text-[#14F195]" />}
             label="Payment Token"
             value="SOL"
           />
@@ -85,7 +83,7 @@ export default function NFTSidebar({ onAction, onShare }: NFTSidebarProps) {
               )
             }
           >
-            <span className="text-sm font-semibold">𝕏</span>
+              <FaXTwitter aria-hidden="true" />
           </ShareButton>
           <ShareButton
             label="Discord"
@@ -93,7 +91,7 @@ export default function NFTSidebar({ onAction, onShare }: NFTSidebarProps) {
               onAction("Share this NFT with your Discord community")
             }
           >
-            <span className="text-sm font-bold">◈</span>
+            <SiDiscord aria-hidden="true" />
           </ShareButton>
           <ShareButton label="Copy NFT URL" onClick={onShare}>
             <FiCopy />

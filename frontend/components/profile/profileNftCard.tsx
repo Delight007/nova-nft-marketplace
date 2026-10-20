@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { FaCheck, FaHeart } from "react-icons/fa";
+import { SiSolana } from "react-icons/si";
 
 interface Nft {
   id: string;
@@ -73,9 +74,10 @@ export default function ProfileNftCard({ nft }: ProfileNftCardProps) {
         {/* PRICE */}
         <div className="mt-4 flex items-end justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 text-[8px] font-bold">
-              S
-            </div>
+            <SiSolana
+              aria-hidden="true"
+              className="h-5 w-5 text-[#14F195]"
+            />
 
             <span className="text-sm font-semibold text-white">
               {nft.price}

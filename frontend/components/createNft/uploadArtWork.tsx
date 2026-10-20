@@ -39,7 +39,7 @@ export default function UploadArtwork({
           Upload Artwork
         </h2>
 
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-xs text-slate-400">
           Add your digital file. Supported formats: JPG, PNG, GIF, WEBP, MP4,
           MOV
         </p>
