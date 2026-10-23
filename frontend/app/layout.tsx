@@ -1,7 +1,9 @@
 import Navbar from "@/components/navbar";
+import AppWalletProvider from "@/components/providers/WalletProvider";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,8 +27,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        {children}
+        <AppWalletProvider>
+          <QueryProvider>
+            <Navbar />
+            {children}
+          </QueryProvider>
+        </AppWalletProvider>
       </body>
     </html>
   );

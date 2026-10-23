@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+  EXPIRED
+}
+
+enum ActivityType {
+  MINTED
+  LISTED
+  DELISTED
+  SALE
+  OFFER_MADE
+  OFFER_ACCEPTED
+  OFFER_CANCELLED
+  TRANSFER
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+model User {
+  id       String  @id @default(cuid())
+  wallet   String  @unique
+  username String? @unique
+  avatar   String?
+  bio      String? @db.VarChar(300)
+  website  String?
+  twitter  String?
+  discord  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedNFTs     NFT[]      @relation("NFTOwner")
+  createdNFTs   NFT[]      @relation("NFTCreator")
+  collections   Collection[] @relation("CollectionCreator")
+  listings      Listing[]  @relation("SellerListings")
+  purchases     Sale[]     @relation("BuyerSales")
+  sales         Sale[]     @relation("SellerSales")
+  activities    Activity[]
+  offersMade    Offer[]    @relation("OfferMaker")
+  offersReceived Offer[]   @relation("OfferReceiver")
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  address     String?  @unique
+  name        String
+  slug        String   @unique
+  description String?
+  image       String?
+  banner      String?
+  website     String?
+  twitter     String?
+  discord     String?
+  verified    Boolean  @default(false)
+
+  creatorId String
+  creator   User     @relation("CollectionCreator", fields: [creatorId], references: [id])
+
+  nfts      NFT[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NFT {
+  id          String   @id @default(cuid())
+  mintAddress String   @unique
+
+  name        String
+  description String?
+  image       String
+  metadataUri String?
+
+  attributes  Json?
+
+  collectionId String?
+  collection   Collection? @relation(fields: [collectionId], references: [id])
+
+  creatorId String
+  creator   User     @relation("NFTCreator", fields: [creatorId], references: [id])
+
+  ownerId String
+  owner   User     @relation("NFTOwner", fields: [ownerId], references: [id])
+
+  listings  Listing[]
+  sales     Sale[]
+  activities Activity[]
+  offers    Offer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([collectionId])
+  @@index([creatorId])
+  @@index([ownerId])
+}
+
+model Listing {
+  id        String        @id @default(cuid())
+
+  nftId     String
+  nft       NFT           @relation(fields: [nftId], references: [id])
+
+  sellerId  String
+  seller    User          @relation("SellerListings", fields: [sellerId], references: [id])
+
+  price     Decimal       @db.Decimal(20, 9)
+  currency  String        @default("SOL")
+
+  status    ListingStatus @default(ACTIVE)
+
+  transactionSignature String? @unique
+
+  listedAt   DateTime @default(now())
+  soldAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([nftId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model Sale {
+  id        String   @id @default(cuid())
+
+  nftId     String
+  nft       NFT      @relation(fields: [nftId], references: [id])
+
+  buyerId   String
+  buyer     User     @relation("BuyerSales", fields: [buyerId], references: [id])
+
+  sellerId  String
+  seller    User     @relation("SellerSales", fields: [sellerId], references: [id])
+
+  price    Decimal  @db.Decimal(20, 9)
+  currency String   @default("SOL")
+
+  transactionSignature String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([nftId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+
+  type      ActivityType
+
+  nftId     String
+  nft       NFT          @relation(fields: [nftId], references: [id])
+
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+
+  price    Decimal?      @db.Decimal(20, 9)
+  currency  String?
+
+  transactionSignature String? @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([nftId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Offer {
+  id        String      @id @default(cuid())
+
+  nftId     String
+  nft       NFT         @relation(fields: [nftId], references: [id])
+
+  makerId   String
+  maker     User        @relation("OfferMaker", fields: [makerId], references: [id])
+
+  receiverId String
+  receiver   User        @relation("OfferReceiver", fields: [receiverId], references: [id])
+
+  amount    Decimal     @db.Decimal(20, 9)
+  currency  String      @default("SOL")
+
+  status    OfferStatus @default(PENDING)
+
+  expiresAt DateTime?
+
+  transactionSignature String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([nftId])
+  @@index([makerId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+
+model WalletChallenge {
+  id        String   @id @default(cuid())
+  wallet    String
+  nonce     String   @unique
+  message   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([wallet])
+  @@index([expiresAt])
+}
