@@ -12,6 +12,9 @@ export const collections: Collection[] = [
     volume: "42.8K SOL",
     itemBadge: "10K+",
     verified: true,
+    category: "Art",
+    isNew: false,
+    activeTrading: true,
   },
 
   {
@@ -25,6 +28,9 @@ export const collections: Collection[] = [
     volume: "28.4K SOL",
     itemBadge: "5K+",
     verified: true,
+    category: "PFP",
+    isNew: false,
+    activeTrading: true,
   },
 
   {
@@ -38,6 +44,9 @@ export const collections: Collection[] = [
     volume: "18.7K SOL",
     itemBadge: "3K+",
     verified: true,
+    category: "Photography",
+    isNew: false,
+    activeTrading: false,
   },
 
   {
@@ -51,6 +60,9 @@ export const collections: Collection[] = [
     volume: "12.3K SOL",
     itemBadge: "2K+",
     verified: true,
+    category: "Gaming",
+    isNew: true,
+    activeTrading: true,
   },
 
   {
@@ -64,6 +76,9 @@ export const collections: Collection[] = [
     volume: "9.8K SOL",
     itemBadge: "1K+",
     verified: true,
+    category: "Gaming",
+    isNew: false,
+    activeTrading: true,
   },
 
   {
@@ -77,6 +92,9 @@ export const collections: Collection[] = [
     volume: "7.6K SOL",
     itemBadge: "800+",
     verified: true,
+    category: "Art",
+    isNew: false,
+    activeTrading: false,
   },
 
   {
@@ -90,6 +108,9 @@ export const collections: Collection[] = [
     volume: "5.2K SOL",
     itemBadge: "1K+",
     verified: true,
+    category: "Gaming",
+    isNew: true,
+    activeTrading: true,
   },
 
   {
@@ -102,6 +123,9 @@ export const collections: Collection[] = [
     floorPrice: "1.7 SOL",
     volume: "4.9K SOL",
     itemBadge: "900+",
-    verified: true,
+    verified: false,
+    category: "PFP",
+    isNew: true,
+    activeTrading: false,
   },
 ];

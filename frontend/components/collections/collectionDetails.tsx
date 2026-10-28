@@ -14,50 +14,64 @@ import {
 
 import { SiDiscord } from "react-icons/si";
 
-type CollectionProfile = {
-  id: number;
-  name: string;
-  creator: string;
-  avatar: string;
-  banner: string;
-  description: string;
-  website: string;
-  floorPrice: string;
-  floorUsd: string;
-  volume: string;
-  volumeUsd: string;
-  volumeChange: string;
-  items: string;
-  owners: string;
-  ownerPercentage: string;
-};
+import { useCollectionDetails } from "@/hooks/use-collection-details";
 
-const collection: CollectionProfile = {
-  id: 1,
-  name: "Neon Realms",
-  creator: "NeonCreators",
-  avatar: "/images/n.png",
-  banner: "/images/b2.jpg",
-  description:
-    "A collection of 10,000 unique digital art pieces exploring the intersection of humanity and technology. Each NFT is a portal to a different realm in the Neon universe.",
-  website: "neonrealms.io",
-  floorPrice: "3.2 SOL",
-  floorUsd: "$482.16",
-  volume: "842 SOL",
-  volumeUsd: "$126,310.24",
-  volumeChange: "12.4%",
-  items: "10,000",
-  owners: "6,821",
-  ownerPercentage: "68.2%",
-};
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
 
-export default function CollectionDetails() {
+function formatSol(value: number | null) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "— SOL";
+  }
+
+  return `${value.toLocaleString("en-US", {
+    maximumFractionDigits: 2,
+  })} SOL`;
+}
+
+function formatPercent(value: number | null, digits = 1) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "—";
+  }
+
+  return `${value.toFixed(digits)}%`;
+}
+
+export default function CollectionDetails({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
+
+  const { data: collection, isPending, isError } = useCollectionDetails(slug);
+
+  if (isPending) {
+    return (
+      <section className="container border-b border-white/10 bg-[#020812] py-12 text-center text-slate-300">
+        Loading collection...
+      </section>
+    );
+  }
+
+  if (isError || !collection) {
+    return (
+      <section className="container border-b border-white/10 bg-[#020812] py-12 text-center text-slate-300">
+        Collection not found.
+      </section>
+    );
+  }
+
+  const floorPrice = collection.stats.floorPrice;
+  const volume24h = collection.stats.volume24h;
+  const volumeChange = collection.stats.volumeChange;
+  const banner = collection.banner ?? collection.image ?? "/images/n.png";
+  const avatar = collection.creatorAvatar ?? collection.image ?? "/images/n.png";
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(
-        `${window.location.origin}/collections/${collection.id}`,
+        `${window.location.origin}/collections/${collection.slug}`,
       );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -67,13 +81,13 @@ export default function CollectionDetails() {
   };
 
   const shareCollection = async () => {
-    const url = `${window.location.origin}/collections/${collection.id}`;
+    const url = `${window.location.origin}/collections/${collection.slug}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: collection.name,
-          text: collection.description,
+          text: collection.description ?? "",
           url,
         });
       } catch {
@@ -88,7 +102,7 @@ export default function CollectionDetails() {
     <section className="container relative overflow-hidden border-b border-white/10 bg-[#020812]">
       <div className="absolute inset-0">
         <Image
-          src={collection.banner}
+          src={banner}
           alt={`${collection.name} banner`}
           fill
           priority
@@ -107,7 +121,7 @@ export default function CollectionDetails() {
           {/* Square collection avatar */}
           <div className="relative mt-0.5 hidden h-[143px] w-[146px] shrink-0 overflow-hidden rounded-2xl border border-cyan-400/70 bg-[#071120] sm:block">
             <Image
-              src={collection.avatar}
+              src={avatar}
               alt={collection.name}
               fill
               sizes="146px"
@@ -125,18 +139,20 @@ export default function CollectionDetails() {
                     {collection.name}
                   </h1>
 
-                  <span
-                    aria-label="Verified collection"
-                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white"
-                  >
-                    <FiCheck className="h-3 w-3 stroke-[3]" />
-                  </span>
+                  {collection.verified && (
+                    <span
+                      aria-label="Verified collection"
+                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white"
+                    >
+                      <FiCheck className="h-3 w-3 stroke-[3]" />
+                    </span>
+                  )}
                 </div>
 
                 <p className="mt-1.5 flex items-center gap-2 text-xs text-slate-300">
                   <span className="relative h-6 w-6 overflow-hidden rounded-full border border-white/20">
                     <Image
-                      src={collection.avatar}
+                      src={avatar}
                       alt=""
                       fill
                       sizes="24px"
@@ -144,10 +160,7 @@ export default function CollectionDetails() {
                     />
                   </span>
                   <span>
-                    by{" "}
-                    <span className="text-cyan-300">
-                      {collection.creator}
-                    </span>
+                    by <span className="text-cyan-300">{collection.creator}</span>
                   </span>
                 </p>
               </div>
@@ -174,33 +187,39 @@ export default function CollectionDetails() {
 
             {/* Short description */}
             <p className="mt-3 max-w-[470px] text-xs leading-[18px] text-slate-300 md:text-[12px]">
-              {collection.description}
+              {collection.description || "No collection description available."}
             </p>
 
             {/* Website and social links */}
             <div className="mt-3 flex flex-wrap items-center gap-4">
-              <a
-                href={`https://${collection.website}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-[11px] text-emerald-300 transition hover:text-white"
-              >
-                <FaGlobe className="h-3.5 w-3.5" />
-                {collection.website}
-              </a>
+              {collection.website && (
+                <a
+                  href={`https://${collection.website}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-[11px] text-emerald-300 transition hover:text-white"
+                >
+                  <FaGlobe className="h-3.5 w-3.5" />
+                  {collection.website}
+                </a>
+              )}
 
               <a
-                href="#"
+                href={collection.twitter || "#"}
                 aria-label="X"
                 className="text-slate-300 transition hover:text-white"
+                target={collection.twitter ? "_blank" : undefined}
+                rel={collection.twitter ? "noreferrer" : undefined}
               >
                 <FaXTwitter className="h-3.5 w-3.5" />
               </a>
 
               <a
-                href="#"
+                href={collection.discord || "#"}
                 aria-label="Discord"
                 className="text-slate-300 transition hover:text-white"
+                target={collection.discord ? "_blank" : undefined}
+                rel={collection.discord ? "noreferrer" : undefined}
               >
                 <SiDiscord className="h-3.5 w-3.5" />
               </a>
@@ -230,25 +249,29 @@ export default function CollectionDetails() {
         <div className="grid min-h-[73px] grid-cols-2 border-t border-white/10 py-3 md:grid-cols-4 md:py-3">
           <CollectionStat
             label="Floor Price"
-            value={collection.floorPrice}
-            subValue={`≈ ${collection.floorUsd}`}
+            value={formatSol(floorPrice)}
+            subValue={floorPrice ? `≈ ${collection.stats.floorCurrency}` : undefined}
             icon="◆"
           />
 
           <CollectionStat
             label="24h Volume"
-            value={collection.volume}
-            subValue={`≈ ${collection.volumeUsd}`}
-            change={collection.volumeChange}
+            value={formatSol(volume24h)}
+            subValue={volumeChange !== null ? `≈ ${formatCompactNumber(volume24h)} SOL` : undefined}
+            change={volumeChange === null ? undefined : `${volumeChange.toFixed(1)}%`}
             icon="↗"
           />
 
-          <CollectionStat label="Items" value={collection.items} icon="▦" />
+          <CollectionStat
+            label="Items"
+            value={formatCompactNumber(collection.stats.items)}
+            icon="▦"
+          />
 
           <CollectionStat
             label="Owners"
-            value={collection.owners}
-            subValue={collection.ownerPercentage}
+            value={formatCompactNumber(collection.stats.owners)}
+            subValue={formatPercent(collection.stats.ownerPercentage)}
             icon="♧"
           />
         </div>

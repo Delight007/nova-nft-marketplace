@@ -19,6 +19,7 @@ export const updateProfileSchema = z
       .optional(),
 
     avatar: optionalUrl,
+    banner: optionalUrl,
 
     bio: z
       .string()

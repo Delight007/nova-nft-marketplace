@@ -1,33 +1,42 @@
 "use client";
 
+import { useState } from "react";
+
 import CollectedNfts from "@/components/profile/collectedNfts";
 import CreatorAnalytics from "@/components/profile/creatorAnalytics";
+import ProfileActivity from "@/components/profile/profileActivity";
 import ProfileHero from "@/components/profile/profileHero";
-import ProfileTabs from "@/components/profile/profileTabs";
+import ProfileTabs, {
+  type ProfileTabName,
+} from "@/components/profile/profileTabs";
 import TopCollections from "@/components/profile/topCollections";
 import ProfileSocials from "./profileSocial";
 
 export default function ProfilePage() {
+  const [activeTab, setActiveTab] = useState<ProfileTabName>("Collected");
+
   return (
     <section className="container min-h-screen bg-[#020817] text-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <ProfileHero />
 
         <div className="mx-auto max-w-[1500px] px-6">
-          <ProfileTabs />
+          <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
           <div className="grid grid-cols-1 gap-5 pb-20 lg:grid-cols-[minmax(0,1fr)_365px]">
-            {/* MAIN CONTENT */}
             <section className="min-w-0">
-              <CollectedNfts />
+              {activeTab === "Collected" && <CollectedNfts mode="collected" />}
+
+              {activeTab === "Created" && <CollectedNfts mode="created" />}
+
+              {activeTab === "Listed" && <CollectedNfts mode="listed" />}
+
+              {activeTab === "Activity" && <ProfileActivity />}
             </section>
 
-            {/* SIDEBAR */}
-            <aside className="space-y-5 border-l border-white/5 pl-0 lg:pl-5">
+            <aside className="space-y-5 border-l border-white/5 pl-0 lg:pl-5 lg:py-6 py-4">
               <CreatorAnalytics />
-
               <TopCollections />
-
               <ProfileSocials />
             </aside>
           </div>

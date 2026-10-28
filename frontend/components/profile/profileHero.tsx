@@ -217,6 +217,7 @@
 "use client";
 
 import { useMyProfile } from "@/hooks/use-my-profile";
+import { useMyProfileStats } from "@/hooks/use-my-profile-stats";
 import { useEffect, useState } from "react";
 import {
   FaCheck,
@@ -230,8 +231,6 @@ import { FaXTwitter } from "react-icons/fa6";
 import { SiDiscord } from "react-icons/si";
 import ProfileEditModal from "./profileEdithModal";
 
-const banner = "https://images.unsplash.com/photo-1519608487953-e999c86e7455";
-
 function shortenWallet(wallet: string) {
   if (wallet.length <= 14) return wallet;
   return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
@@ -241,6 +240,34 @@ export default function ProfileHero() {
   const { data: profile, isLoading, isError } = useMyProfile();
   const [editOpen, setEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useMyProfileStats();
+
+  const profileStats = [
+    {
+      label: "NFTs Owned",
+      value: stats?.ownedNFTs.toLocaleString() ?? "—",
+    },
+    {
+      label: "Created",
+      value: stats?.createdNFTs.toLocaleString() ?? "—",
+    },
+    {
+      label: "Listed",
+      value: stats?.listedNFTs.toLocaleString() ?? "—",
+    },
+    {
+      label: "Volume Traded",
+      value: stats ? `${Number(stats.volumeTraded).toLocaleString()} SOL` : "—",
+    },
+    {
+      label: "Followers",
+      value: stats?.followers.toLocaleString() ?? "—",
+    },
+  ];
 
   useEffect(() => {
     if (!copied) return;
@@ -303,7 +330,9 @@ export default function ProfileHero() {
         {/* Banner */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url("${banner}")` }}
+          style={{
+            backgroundImage: `url("${profile.banner || "https://images.unsplash.com/photo-1519608487953-e999c86e7455"}")`,
+          }}
           role="img"
           aria-label="Profile banner"
         />
@@ -474,15 +503,9 @@ export default function ProfileHero() {
                 </div>
               </div>
 
-              {/* Stats: connect these to indexed marketplace data later */}
+              {/* Stats */}
               <div className="mt-7 flex flex-wrap items-center gap-y-5">
-                {[
-                  { label: "NFTs Owned", value: "—" },
-                  { label: "Created", value: "—" },
-                  { label: "Listed", value: "—" },
-                  { label: "Volume Traded", value: "— SOL" },
-                  { label: "Followers", value: "—" },
-                ].map((stat, index) => (
+                {profileStats.map((stat, index) => (
                   <div
                     key={stat.label}
                     className={`min-w-[130px] pr-8 ${

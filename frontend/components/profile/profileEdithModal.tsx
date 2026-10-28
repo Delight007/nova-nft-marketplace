@@ -22,6 +22,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { SiDiscord } from "react-icons/si";
 
 import { useMyProfile, useUpdateMyProfile } from "@/hooks/use-my-profile";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import {
   profileSchema,
   type ProfileFormValues,
@@ -90,7 +91,15 @@ export default function ProfileEditModal({ onClose }: Props) {
   const { data: profile } = useMyProfile();
   const updateProfile = useUpdateMyProfile();
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [bannerPreview, setBannerPreview] = useState(DEFAULT_BANNER);
+
+  const [uploadError, setUploadError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -99,8 +108,7 @@ export default function ProfileEditModal({ onClose }: Props) {
     handleSubmit,
     reset,
     watch,
-    setValue,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     mode: "onBlur",
@@ -114,7 +122,6 @@ export default function ProfileEditModal({ onClose }: Props) {
     },
   });
 
-  const avatar = watch("avatar") ?? "";
   const bio = watch("bio") ?? "";
 
   useEffect(() => {
@@ -128,6 +135,11 @@ export default function ProfileEditModal({ onClose }: Props) {
       twitter: profile.twitter ?? "",
       discord: profile.discord ?? "",
     });
+    setAvatarFile(null);
+    setBannerFile(null);
+    setAvatarPreview(profile.avatar ?? "");
+    setBannerPreview(profile.banner || DEFAULT_BANNER);
+    setUploadError("");
   }, [profile, reset]);
 
   const copyWallet = async () => {
@@ -142,20 +154,87 @@ export default function ProfileEditModal({ onClose }: Props) {
     }
   };
 
+  const handleImageSelect = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: "avatar" | "banner",
+  ) => {
+    const file = event.target.files?.[0];
+
+    // Allow selecting the same file again.
+    event.target.value = "";
+
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Choose a JPG, PNG, or WebP image.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image size must not exceed 5 MB.");
+      return;
+    }
+
+    setUploadError("");
+
+    const previewUrl = URL.createObjectURL(file);
+
+    if (type === "avatar") {
+      setAvatarFile(file);
+      setAvatarPreview(previewUrl);
+    } else {
+      setBannerFile(file);
+      setBannerPreview(previewUrl);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+
+      if (bannerPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(bannerPreview);
+      }
+    };
+  }, [avatarPreview, bannerPreview]);
+
   const onSubmit = async (values: ProfileFormValues) => {
     try {
+      setUploadError("");
+      setIsUploading(true);
+
+      let avatarUrl = values.avatar || null;
+      let bannerUrl = profile?.banner ?? null;
+
+      if (avatarFile) {
+        avatarUrl = await uploadImageToCloudinary(avatarFile, "avatars");
+      }
+
+      if (bannerFile) {
+        bannerUrl = await uploadImageToCloudinary(bannerFile, "banners");
+      }
+
       await updateProfile.mutateAsync({
         username: values.username,
         bio: values.bio,
-        avatar: values.avatar,
+        avatar: avatarUrl ?? "",
+        banner: bannerUrl ?? "",
         website: values.website,
         twitter: values.twitter,
         discord: values.discord,
       });
 
       onClose();
-    } catch {
-      // Mutation errors are displayed in the form.
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Unable to save your profile.",
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -266,36 +345,30 @@ export default function ProfileEditModal({ onClose }: Props) {
                   src={bannerPreview}
                   alt="Profile banner preview"
                   className="h-full w-full object-cover"
-                  onError={() => setBannerPreview(DEFAULT_BANNER)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#020817]/80 to-transparent" />
 
                 <div className="absolute bottom-3 right-3 left-3">
                   <label
-                    htmlFor="banner-url"
+                    htmlFor="banner-file"
                     className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/15 bg-black/60 px-3 py-2 text-xs font-semibold text-white backdrop-blur transition hover:border-purple-400/50"
                   >
                     <FaCamera className="text-purple-300" />
-                    Set banner URL
+                    Choose Banner Image
                   </label>
+
                   <input
-                    id="banner-url"
-                    type="url"
-                    placeholder="Paste a banner image URL"
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-xs text-white outline-none placeholder:text-slate-400 focus:border-purple-500"
-                    value={bannerPreview}
-                    onChange={(event) => setBannerPreview(event.target.value)}
-                    onBlur={() => {
-                      if (!bannerPreview.trim()) {
-                        setBannerPreview(DEFAULT_BANNER);
-                      }
-                    }}
+                    id="banner-file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(event) => handleImageSelect(event, "banner")}
                   />
                 </div>
               </div>
               <p className="mt-2 text-[11px] leading-5 text-slate-500">
-                Banner preview only. Saving a banner requires a banner field in
-                your User model and profile API.
+                Choose a banner image. It will upload to Cloudinary when you
+                save.
               </p>
             </div>
 
@@ -303,9 +376,9 @@ export default function ProfileEditModal({ onClose }: Props) {
             <div className="flex items-center gap-4 rounded-xl border border-white/[0.07] bg-[#080e1d]/70 p-4 sm:gap-5">
               <div className="relative h-24 w-24 shrink-0 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-cyan-400 p-[3px] shadow-[0_0_30px_rgba(139,92,246,0.15)]">
                 <div className="h-full w-full overflow-hidden rounded-full bg-[#050b18] p-1">
-                  {avatar ? (
+                  {avatarPreview ? (
                     <img
-                      src={avatar}
+                      src={avatarPreview}
                       alt="Avatar preview"
                       className="h-full w-full rounded-full object-cover"
                       onError={(event) => {
@@ -332,8 +405,24 @@ export default function ProfileEditModal({ onClose }: Props) {
                   Profile Avatar
                 </h4>
                 <p className="mt-1 text-xs leading-5 text-slate-400">
-                  Use an image URL for your public profile picture.
+                  Upload a profile picture from your device.
                 </p>
+
+                <label
+                  htmlFor="avatar-file"
+                  className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:border-purple-500/50 hover:bg-white/5"
+                >
+                  <FaCamera />
+                  Choose Profile Picture
+                </label>
+
+                <input
+                  id="avatar-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => handleImageSelect(event, "avatar")}
+                />
                 <p className="mt-1 text-[11px] text-slate-500">
                   Recommended: square image
                 </p>
@@ -555,6 +644,15 @@ export default function ProfileEditModal({ onClose }: Props) {
             </section>
 
             {/* Error message */}
+
+            {uploadError && (
+              <div
+                role="alert"
+                className="rounded-xl border border-red-500/20 bg-red-500/[0.08] p-4 text-sm text-red-300"
+              >
+                {uploadError}
+              </div>
+            )}
             {updateProfile.isError && (
               <div
                 role="alert"
@@ -576,13 +674,17 @@ export default function ProfileEditModal({ onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={isSubmitting || updateProfile.isPending}
+                disabled={
+                  isSubmitting || updateProfile.isPending || isUploading
+                }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-900/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FaSave />
-                {isSubmitting || updateProfile.isPending
-                  ? "Saving Changes..."
-                  : "Save Changes"}
+                {isUploading
+                  ? "Uploading Images..."
+                  : isSubmitting || updateProfile.isPending
+                    ? "Saving Changes..."
+                    : "Save Changes"}
               </button>
             </div>
           </div>

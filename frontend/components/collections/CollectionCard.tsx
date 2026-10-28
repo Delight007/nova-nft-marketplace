@@ -1,25 +1,32 @@
 "use client";
 
+import { Collection } from "@/services/collections";
 import Image from "next/image";
 import { FaArrowRight } from "react-icons/fa6";
 import { FiCheck, FiLayers, FiTrendingUp, FiUsers } from "react-icons/fi";
 
-export type Collection = {
-  id: number;
-  name: string;
-  creator: string;
-  creatorAvatar: string;
-  banner: string;
-  items: string;
-  floorPrice: string;
-  volume: string;
-  itemBadge: string;
-  verified?: boolean;
-};
-
 type CollectionCardProps = {
   collection: Collection;
 };
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatSol(value: number) {
+  if (value === 0) return "— SOL";
+
+  return `${value.toLocaleString("en-US", {
+    maximumFractionDigits: 2,
+  })} SOL`;
+}
 
 export default function CollectionCard({ collection }: CollectionCardProps) {
   return (
@@ -29,7 +36,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
       ============================================================ */}
       <div className="relative aspect-[1.9/1] overflow-hidden">
         <Image
-          src={collection.banner}
+          src={collection.banner || "/images/n.png"}
           alt={collection.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -41,7 +48,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
 
         {/* Item count badge */}
         <div className="absolute right-2.5 top-2.5 rounded-full bg-violet-600/90 px-2 py-1 text-[9px] font-semibold text-white shadow-lg backdrop-blur-sm">
-          {collection.itemBadge}
+          {formatCompactNumber(collection.items)}{" "}
         </div>
       </div>
 
@@ -69,7 +76,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
         <div className="mt-1.5 flex items-center gap-1.5">
           <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full border border-white/20">
             <Image
-              src={collection.creatorAvatar}
+              src={collection.creatorAvatar || "/images/n.png"}
               alt={collection.creator}
               fill
               sizes="20px"
@@ -89,14 +96,14 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
           {/* Items */}
           <CollectionStat
             icon={<FiLayers />}
-            value={collection.items}
+            value={formatNumber(collection.items)}
             label="Items"
           />
 
           {/* Floor */}
           <CollectionStat
             icon={<FiUsers />}
-            value={collection.floorPrice}
+            value={formatSol(collection.floorPrice)}
             label="Floor Price"
             bordered
           />
@@ -104,7 +111,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
           {/* Volume */}
           <CollectionStat
             icon={<FiTrendingUp />}
-            value={collection.volume}
+            value={`${formatCompactNumber(collection.volume)} SOL`}
             label="Volume"
             bordered
           />
@@ -116,7 +123,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
         <button
           type="button"
           onClick={() => {
-            window.location.href = `/collections/${collection.id}`;
+            window.location.href = `/collections/${collection.slug}`;
           }}
           className="mt-3 flex h-7.5 w-full items-center justify-center gap-2 rounded-lg border border-violet-500/80 bg-gradient-to-r from-violet-600/10 via-violet-500/10 to-cyan-500/10 text-[10px] font-medium text-white transition-all duration-200 hover:border-cyan-400 hover:bg-gradient-to-r hover:from-violet-600 hover:to-cyan-500"
         >

@@ -5,7 +5,9 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import authRoutes from "./routes/auth.routes.js";
+import collectionRoutes from "./routes/collection.routes.js";
 import healthRoutes from "./routes/health.routes.js";
+import marketplaceRoutes from "./routes/marketplace.routes.js";
 import userRoutes from "./routes/user.routes.js";
 
 dotenv.config();
@@ -31,5 +33,8 @@ app.use("/api/health", healthRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+
+app.use("/api/marketplace", marketplaceRoutes);
+app.use("/api/collections", collectionRoutes);
 
 export default app;
