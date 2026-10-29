@@ -220,9 +220,9 @@
 
 import { useCollections } from "@/hooks/use-Collections";
 import type { Collection } from "@/services/collections";
-import Image from "next/image";
 import { useEffect, useMemo } from "react";
 import CollectionCard from "./CollectionCard";
+import CollectionImage from "./CollectionImage";
 import type { CollectionFilters } from "./CollectionsExplorer";
 
 type CollectionGridProps = {
@@ -415,10 +415,9 @@ export default function CollectionGrid({
                 className="flex items-center gap-4 rounded-xl border border-white/10 bg-[#030b19] p-3 transition hover:border-blue-500/40 sm:gap-5 sm:p-4"
               >
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg sm:h-24 sm:w-24">
-                  <Image
+                  <CollectionImage
                     src={collection.banner || "/images/n.png"}
                     alt={collection.name}
-                    fill
                     sizes="96px"
                     className="object-cover"
                   />

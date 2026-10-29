@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.routes.js";
 import collectionRoutes from "./routes/collection.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import marketplaceRoutes from "./routes/marketplace.routes.js";
+import nftRoutes from "./routes/nft.routes.js";
 import userRoutes from "./routes/user.routes.js";
 
 dotenv.config();
@@ -37,4 +38,5 @@ app.use("/api/users", userRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/collections", collectionRoutes);
 
+app.use("/api/nfts", nftRoutes);
 export default app;

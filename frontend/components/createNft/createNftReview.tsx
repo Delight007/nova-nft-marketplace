@@ -7,17 +7,23 @@ interface NftPreviewProps {
   image: string | null;
   name: string;
   collection: string;
+  username: string | null;
   royalty: string;
   traits: Trait[];
-  onMint: () => void;
+  isUploading: boolean;
+  uploadError: string | null;
+  onMint: () => Promise<void>;
 }
 
 export default function NftPreview({
   image,
   name,
   collection,
+  username,
   royalty,
   traits,
+  isUploading,
+  uploadError,
   onMint,
 }: NftPreviewProps) {
   const displayName = name || "Cyber Soul #001";
@@ -73,7 +79,7 @@ export default function NftPreview({
             </div>
 
             <span className="rounded-full bg-blue-500/10 px-3 py-1.5 text-[10px] text-cyan-300">
-              Created by @levi
+              Created by @{username || "your username"}
             </span>
           </div>
 
@@ -122,10 +128,26 @@ export default function NftPreview({
       <button
         type="button"
         onClick={onMint}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-400 py-3.5 text-sm font-semibold text-white shadow-[0_0_30px_rgba(168,85,247,0.15)] transition hover:scale-[1.01] hover:opacity-95"
+        disabled={isUploading}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-500 to-cyan-400 py-3.5 text-sm font-semibold text-white shadow-[0_0_30px_rgba(168,85,247,0.15)] transition hover:scale-[1.01] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
       >
-        ✦ Mint NFT
+        {isUploading ? (
+          <>
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            Uploading Artwork...
+          </>
+        ) : (
+          <>✦ Mint NFT</>
+        )}
       </button>
+      {uploadError && (
+        <p
+          role="alert"
+          className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"
+        >
+          {uploadError}
+        </p>
+      )}
 
       {/* DRAFT */}
       <button

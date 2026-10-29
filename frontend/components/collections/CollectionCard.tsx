@@ -1,11 +1,11 @@
 "use client";
 
 import { Collection } from "@/services/collections";
-import Image from "next/image";
 import { FaArrowRight } from "react-icons/fa6";
 import { FiCheck, FiLayers, FiTrendingUp, FiUsers } from "react-icons/fi";
+import CollectionImage from "./CollectionImage";
 
-type CollectionCardProps = {
+export type CollectionCardProps = {
   collection: Collection;
 };
 
@@ -35,10 +35,9 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
           COLLECTION IMAGE
       ============================================================ */}
       <div className="relative aspect-[1.9/1] overflow-hidden">
-        <Image
+        <CollectionImage
           src={collection.banner || "/images/n.png"}
           alt={collection.name}
-          fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         />
@@ -75,10 +74,9 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
         {/* Creator */}
         <div className="mt-1.5 flex items-center gap-1.5">
           <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full border border-white/20">
-            <Image
+            <CollectionImage
               src={collection.creatorAvatar || "/images/n.png"}
               alt={collection.creator}
-              fill
               sizes="20px"
               className="object-cover"
             />

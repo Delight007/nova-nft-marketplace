@@ -1,44 +1,27 @@
+"use client";
+
 import MarketplaceStats from "@/components/marketplaceStats";
+import { useCollections } from "@/hooks/use-Collections";
+import type { Collection } from "@/services/collections";
 import Image from "next/image";
 import Link from "next/link";
 import { FiArrowRight, FiTrendingUp } from "react-icons/fi";
 
-const trendingCollections = [
-  {
-    id: 1,
-    name: "Neon Realms",
-    items: "10K items",
-    growth: "+24.5%",
-    floor: "3.2 SOL",
-    image: "/images/n.png",
-  },
-  {
-    id: 2,
-    name: "Ape Society",
-    items: "8.7K items",
-    growth: "+18.2%",
-    floor: "2.8 SOL",
-    image: "/images/n2.png",
-  },
-  {
-    id: 3,
-    name: "Sky Islands",
-    items: "5.4K items",
-    growth: "+12.6%",
-    floor: "1.9 SOL",
-    image: "/images/n3.jpg",
-  },
-  {
-    id: 4,
-    name: "The Forgotten",
-    items: "7.1K items",
-    growth: "+9.3%",
-    floor: "1.4 SOL",
-    image: "/images/n.png",
-  },
-];
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function getTrendingCollections(collections: Collection[]) {
+  return [...collections].sort((a, b) => b.volume - a.volume).slice(0, 4);
+}
 
 export default function TrendingCollections() {
+  const { data: collections = [], isPending, isError } = useCollections();
+  const trendingCollections = getTrendingCollections(collections);
+
   return (
     <section className="border-b border-white/10 ">
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-4 px-6 py-5 lg:grid-cols-[minmax(0,3fr)_minmax(220px,1fr)] lg:px-10">
@@ -64,53 +47,77 @@ export default function TrendingCollections() {
           </div>
 
           {/* Collection cards */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {trendingCollections.map((collection) => (
-              <Link
-                key={collection.id}
-                href={`/collections/${collection.id}`}
-                className="group flex min-w-0 items-center gap-2 rounded-lg border border-blue-900/70 bg-[#061021] p-2 transition duration-300 hover:border-cyan-500/60 hover:bg-[#09172b]"
-              >
-                {/* Collection artwork */}
-                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10">
-                  <Image
-                    src={collection.image}
-                    alt={collection.name}
-                    fill
-                    sizes="40px"
-                    className="object-cover transition duration-300 group-hover:scale-110"
-                  />
-                </div>
-
-                {/* Collection details */}
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-xs font-semibold text-white transition group-hover:text-cyan-300">
-                    {collection.name}
-                  </h3>
-
-                  <p className="mt-1 text-[10px] text-slate-400">
-                    {collection.items}
-                  </p>
-
-                  <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-                    <FiTrendingUp className="text-[11px]" />
-                    {collection.growth}
-                  </p>
-                </div>
-
-                {/* Floor price */}
-                <div className="shrink-0 self-end pb-0.5 text-right">
-                  <p className="text-[10px] font-medium text-cyan-300">
-                    {collection.floor}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {isPending ? (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[68px] animate-pulse rounded-lg border border-blue-900/70 bg-[#061021]"
+                />
+              ))}
+            </div>
+          ) : isError ? (
+            <p className="rounded-lg border border-red-500/20 bg-[#061021] p-4 text-center text-xs text-slate-400">
+              Trending collections are unavailable right now.
+            </p>
+          ) : trendingCollections.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {trendingCollections.map((collection) => (
+                <TrendingCollectionCard
+                  key={collection.id}
+                  collection={collection}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-blue-900/70 bg-[#061021] p-4 text-center text-xs text-slate-400">
+              No collections have been created yet.
+            </p>
+          )}
         </div>
 
         <MarketplaceStats />
       </div>
     </section>
+  );
+}
+
+function TrendingCollectionCard({ collection }: { collection: Collection }) {
+  return (
+    <Link
+      href={`/collections/${encodeURIComponent(collection.slug)}`}
+      className="group flex min-w-0 items-center gap-2 rounded-lg border border-blue-900/70 bg-[#061021] p-2 transition duration-300 hover:border-cyan-500/60 hover:bg-[#09172b]"
+    >
+      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10">
+        <Image
+          src={collection.banner || "/images/n.png"}
+          alt={collection.name}
+          fill
+          sizes="40px"
+          className="object-cover transition duration-300 group-hover:scale-110"
+        />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-xs font-semibold text-white transition group-hover:text-cyan-300">
+          {collection.name}
+        </h3>
+
+        <p className="mt-1 text-[10px] text-slate-400">
+          {formatCompactNumber(collection.items)} items
+        </p>
+
+        <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-emerald-400">
+          <FiTrendingUp className="text-[11px]" />
+          {formatCompactNumber(collection.volume)} SOL volume
+        </p>
+      </div>
+
+      <div className="shrink-0 self-end pb-0.5 text-right">
+        <p className="text-[10px] font-medium text-cyan-300">
+          {collection.floorPrice > 0 ? `${collection.floorPrice} SOL` : "— SOL"}
+        </p>
+      </div>
+    </Link>
   );
 }

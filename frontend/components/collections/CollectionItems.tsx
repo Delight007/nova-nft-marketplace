@@ -222,7 +222,9 @@
 
 "use client";
 
+import { isAxiosError } from "axios";
 import { useCollectionDetails } from "@/hooks/use-collection-details";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { FiActivity, FiTag } from "react-icons/fi";
 import CollectionItemsBars from "./collectionItems/CollectionItemsBars";
@@ -467,40 +469,13 @@ export default function CollectionItems({
     onClearFilters: clearFilters,
   };
 
-  if (isPending) {
-    return (
-      <section className="min-h-80 bg-[#020817] px-6 py-16 text-center text-sm text-slate-400">
-        Loading collection NFTs...
-      </section>
-    );
-  }
-
-  if (isError || !collection) {
-    return (
-      <section className="min-h-80 bg-[#020817] px-6 py-16 text-center">
-        <p className="text-sm text-rose-400">
-          {error instanceof Error
-            ? error.message
-            : "Unable to load this collection's NFTs."}
-        </p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="mt-4 rounded-lg border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/5"
-        >
-          Try again
-        </button>
-      </section>
-    );
-  }
-
   return (
     <section className="min-h-screen bg-[#020817] px-3 pb-12 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px]">
         <CollectionItemsBars
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          itemCount={nftItems.length}
+          itemCount={collection?.nfts.length ?? 0}
           search={search}
           onSearchChange={setSearch}
           onOpenFilters={() => setMobileFiltersOpen(true)}
@@ -531,24 +506,63 @@ export default function CollectionItems({
             </div>
 
             <div className="min-w-0">
-              <CollectionItemsGrid
-                items={filteredNFTs}
-                totalItems={nftItems.length}
-                gridView={gridView}
-                favorites={favorites}
-                usdPrice={usdPrice}
-                onToggleFavorite={(id) =>
-                  setFavorites((current) =>
-                    current.includes(id)
-                      ? current.filter((favorite) => favorite !== id)
-                      : [...current, id],
-                  )
-                }
-                onClearFilters={clearFilters}
-                onBuy={onBuy}
-                onListForSale={onListForSale}
-                onOpenNFT={onOpenNFT}
-              />
+              {!slug || isPending ? (
+                <div
+                  aria-live="polite"
+                  className="flex min-h-80 items-center justify-center rounded-xl border border-white/10 bg-[#030b19] text-sm text-slate-400"
+                >
+                  Loading collection items...
+                </div>
+              ) : isError || !collection ? (
+                isAxiosError(error) && error.response?.status === 404 ? (
+                  <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-white/10 bg-[#030b19] px-6 text-center">
+                    <p className="text-sm text-slate-400">
+                      There are no items to show because this collection could
+                      not be found.
+                    </p>
+                    <Link
+                      href="/collections"
+                      className="mt-4 inline-flex rounded-lg border border-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/5"
+                    >
+                      Browse collections
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-white/10 bg-[#030b19] px-6 text-center">
+                    <p className="text-sm text-rose-400">
+                      {error instanceof Error
+                        ? error.message
+                        : "Unable to load this collection's NFTs."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="mt-4 rounded-lg border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/5"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                )
+              ) : (
+                <CollectionItemsGrid
+                  items={filteredNFTs}
+                  totalItems={nftItems.length}
+                  gridView={gridView}
+                  favorites={favorites}
+                  usdPrice={usdPrice}
+                  onToggleFavorite={(id) =>
+                    setFavorites((current) =>
+                      current.includes(id)
+                        ? current.filter((favorite) => favorite !== id)
+                        : [...current, id],
+                    )
+                  }
+                  onClearFilters={clearFilters}
+                  onBuy={onBuy}
+                  onListForSale={onListForSale}
+                  onOpenNFT={onOpenNFT}
+                />
+              )}
             </div>
           </div>
         ) : (

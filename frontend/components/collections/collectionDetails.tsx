@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import { isAxiosError } from "axios";
+import Link from "next/link";
 import { useState } from "react";
 import { FaGlobe, FaInstagram, FaXTwitter } from "react-icons/fa6";
 
@@ -15,6 +16,7 @@ import {
 import { SiDiscord } from "react-icons/si";
 
 import { useCollectionDetails } from "@/hooks/use-collection-details";
+import CollectionImage from "./CollectionImage";
 
 function formatCompactNumber(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -44,7 +46,8 @@ function formatPercent(value: number | null, digits = 1) {
 export default function CollectionDetails({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
 
-  const { data: collection, isPending, isError } = useCollectionDetails(slug);
+  const { data: collection, isPending, isError, error } =
+    useCollectionDetails(slug);
 
   if (isPending) {
     return (
@@ -55,9 +58,24 @@ export default function CollectionDetails({ slug }: { slug: string }) {
   }
 
   if (isError || !collection) {
+    const notFound = isAxiosError(error) && error.response?.status === 404;
+
     return (
-      <section className="container border-b border-white/10 bg-[#020812] py-12 text-center text-slate-300">
-        Collection not found.
+      <section className="container border-b border-white/10 bg-[#020812] px-6 py-16 text-center text-slate-300">
+        <h1 className="text-xl font-semibold text-white">
+          {notFound ? "Collection not found" : "Unable to load collection"}
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-sm text-slate-400">
+          {notFound
+            ? "This collection may not have been created yet, or the link may be incorrect."
+            : "There was a problem loading this collection. Please try again later."}
+        </p>
+        <Link
+          href="/collections"
+          className="mt-5 inline-flex rounded-lg border border-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/5"
+        >
+          Browse collections
+        </Link>
       </section>
     );
   }
@@ -101,10 +119,9 @@ export default function CollectionDetails({ slug }: { slug: string }) {
   return (
     <section className="container relative overflow-hidden border-b border-white/10 bg-[#020812]">
       <div className="absolute inset-0">
-        <Image
+        <CollectionImage
           src={banner}
           alt={`${collection.name} banner`}
-          fill
           priority
           sizes="100vw"
           className="object-cover object-center"
@@ -120,10 +137,9 @@ export default function CollectionDetails({ slug }: { slug: string }) {
         <div className="flex min-h-[210px] items-start gap-5 pt-7 md:gap-6">
           {/* Square collection avatar */}
           <div className="relative mt-0.5 hidden h-[143px] w-[146px] shrink-0 overflow-hidden rounded-2xl border border-cyan-400/70 bg-[#071120] sm:block">
-            <Image
+            <CollectionImage
               src={avatar}
               alt={collection.name}
-              fill
               sizes="146px"
               className="object-cover"
             />
@@ -151,10 +167,9 @@ export default function CollectionDetails({ slug }: { slug: string }) {
 
                 <p className="mt-1.5 flex items-center gap-2 text-xs text-slate-300">
                   <span className="relative h-6 w-6 overflow-hidden rounded-full border border-white/20">
-                    <Image
+                    <CollectionImage
                       src={avatar}
                       alt=""
-                      fill
                       sizes="24px"
                       className="object-cover"
                     />

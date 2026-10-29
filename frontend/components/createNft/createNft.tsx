@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCreateNFT } from "@/hooks/use-create-nft";
+import { useMyProfile } from "@/hooks/use-my-profile";
+import { uploadNFTArtworkToCloudinary } from "@/lib/nftCloudinary";
+import { useEffect, useState } from "react";
 import CreateNftDetails from "./createNftDetails";
 import NftPreview from "./createNftReview";
 import CreateSteps from "./createSteps";
@@ -12,7 +15,13 @@ export interface Trait {
 }
 
 export default function CreatePage() {
+  const { data: profile } = useMyProfile();
+  const createNFTMutation = useCreateNFT();
   const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -22,6 +31,8 @@ export default function CreatePage() {
   const [royalty, setRoyalty] = useState("5");
 
   const [externalUrl, setExternalUrl] = useState("");
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [traits, setTraits] = useState<Trait[]>([
     {
@@ -38,10 +49,16 @@ export default function CreatePage() {
     },
   ]);
 
+  useEffect(() => {
+    return () => {
+      if (image) {
+        URL.revokeObjectURL(image);
+      }
+    };
+  }, [image]);
+
   const handleImageChange = (file: File) => {
-    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-      return;
-    }
+    setImageFile(file);
 
     const imageUrl = URL.createObjectURL(file);
     setImage(imageUrl);
@@ -78,18 +95,47 @@ export default function CreatePage() {
     setTraits((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleMint = () => {
-    console.log({
-      image,
-      name,
-      description,
-      collection,
-      royalty,
-      externalUrl,
-      traits,
-    });
+  const handleMint = async () => {
+    setSuccessMessage(null);
+    if (!imageFile) {
+      setUploadError("Please select your NFT artwork first.");
+      return;
+    }
 
-    // Solana mint logic will be added here later.
+    if (!name.trim()) {
+      setUploadError("Please enter an NFT name.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      // Step 1: Upload artwork to Cloudinary.
+      const artworkUrl = await uploadNFTArtworkToCloudinary(imageFile);
+
+      // Step 2: Save the NFT details in PostgreSQL.
+      const result = await createNFTMutation.mutateAsync({
+        name: name.trim(),
+        description: description.trim(),
+        image: artworkUrl,
+        attributes: traits.filter(
+          (trait) => trait.trait_type.trim() && trait.value.trim(),
+        ),
+      });
+      setSuccessMessage(
+        "NFT saved successfully! On-chain minting is coming next.",
+      );
+      console.log("NFT saved:", result.nft);
+
+      // Actual Solana minting will be implemented later.
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Failed to create NFT.",
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -118,7 +164,11 @@ export default function CreatePage() {
 
             <CreateSteps />
           </div>
-
+          {successMessage && (
+            <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-400">
+              {successMessage}
+            </p>
+          )}
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)]">
             <UploadArtwork image={image} onImageChange={handleImageChange} />
             <CreateNftDetails
@@ -141,9 +191,12 @@ export default function CreatePage() {
               image={image}
               name={name}
               collection={collection}
+              username={profile?.username ?? null}
               royalty={royalty}
               traits={traits}
               onMint={handleMint}
+              isUploading={isUploading}
+              uploadError={uploadError}
             />
           </div>
         </div>

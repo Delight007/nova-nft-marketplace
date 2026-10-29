@@ -284,10 +284,10 @@ import {
   useFeaturedCollections,
   useMarketplaceStats,
 } from "@/hooks/use-marketPlace";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 import { FiCheck, FiLayers, FiUsers } from "react-icons/fi";
+import CollectionImage from "./CollectionImage";
 
 export default function CollectionHero() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -444,10 +444,9 @@ export default function CollectionHero() {
                         : "pointer-events-none opacity-0"
                     }`}
                   >
-                    <Image
+                    <CollectionImage
                       src={collection.banner || "/images/b.png"}
                       alt={`${collection.name} collection`}
-                      fill
                       priority={index === 0}
                       sizes="(max-width: 1024px) 100vw, 900px"
                       className="object-cover object-center"

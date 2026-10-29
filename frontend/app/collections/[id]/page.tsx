@@ -1,59 +1,43 @@
-// "use client";
-
-// import CollectionDetails from "@/components/collections/collectionDetails";
-// import CollectionItems from "@/components/collections/CollectionItems";
-
-// export default function page() {
-//   return (
-//     <main>
-//       <CollectionDetails />
-//       {/* Items, Activity, Offers and filters */}
-//       <CollectionItems
-//         onBuy={(nft) => {
-//           console.log("Buy NFT:", nft.id);
-//           // Connect your purchase flow here.
-//         }}
-//         onListForSale={(nft) => {
-//           console.log("List NFT:", nft.id);
-//           // Open your listing flow here.
-//         }}
-//         onOpenNFT={(nft) => {
-//           console.log("Open NFT details:", nft.id);
-//           // Navigate to your NFT details route here.
-//         }}
-//       />
-//     </main>
-//   );
-// }
-
 "use client";
 
 import CollectionDetails from "@/components/collections/collectionDetails";
 import CollectionItems from "@/components/collections/CollectionItems";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function CollectionPage() {
-  const { slug } = useParams<{ slug: string }>();
+type CollectionPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default function CollectionPage({ params }: CollectionPageProps) {
+  const [slug, setSlug] = useState("");
+  const [paramsError, setParamsError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    void params.then(
+      ({ id }) => {
+        if (active) setSlug(id);
+      },
+      () => {
+        if (active) setParamsError(true);
+      },
+    );
+
+    return () => {
+      active = false;
+    };
+  }, [params]);
 
   return (
     <main>
+      {paramsError && (
+        <p className="container bg-[#020812] py-4 text-center text-sm text-rose-400">
+          Unable to load this collection route.
+        </p>
+      )}
       <CollectionDetails slug={slug} />
-
-      <CollectionItems
-        slug={slug}
-        onBuy={(nft) => {
-          console.log("Buy NFT:", nft.id);
-          // Connect your purchase flow here.
-        }}
-        onListForSale={(nft) => {
-          console.log("List NFT:", nft.id);
-          // Open your listing flow here.
-        }}
-        onOpenNFT={(nft) => {
-          console.log("Open NFT details:", nft.id);
-          // Navigate to your NFT details route here.
-        }}
-      />
+      <CollectionItems slug={slug} />
     </main>
   );
 }

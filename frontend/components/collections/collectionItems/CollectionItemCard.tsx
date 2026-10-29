@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   FiCheckCircle,
   FiClock,
@@ -10,6 +9,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 import { SiSolana } from "react-icons/si";
+import CollectionImage from "../CollectionImage";
 import { rarityColors } from "./collectionItemsData";
 import type { NFTItem } from "./collectionItemsData";
 
@@ -48,10 +48,9 @@ export default function CollectionItemCard({
             : "h-28 w-36 shrink-0 rounded-lg sm:h-32 sm:w-44"
         }`}
       >
-        <Image
+        <CollectionImage
           src={item.image}
           alt={item.name}
-          fill
           sizes={
             gridView
               ? "(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
