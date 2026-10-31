@@ -332,3 +332,151 @@ export async function createNFT(req: Request, res: Response) {
     });
   }
 }
+
+export async function updateNFTMint(req: Request, res: Response) {
+  try {
+    const userId = req.auth?.userId;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message: "NFT id is required",
+      });
+      return;
+    }
+
+    const { mintAddress, metadataUri } = req.body;
+
+    if (
+      typeof mintAddress !== "string" ||
+      !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintAddress)
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid Solana mint address",
+      });
+      return;
+    }
+
+    if (typeof metadataUri !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Metadata URI is required",
+      });
+      return;
+    }
+
+    let parsedMetadataUri: URL;
+
+    try {
+      parsedMetadataUri = new URL(metadataUri);
+    } catch {
+      res.status(400).json({
+        success: false,
+        message: "Invalid metadata URI",
+      });
+      return;
+    }
+
+    if (parsedMetadataUri.protocol !== "https:") {
+      res.status(400).json({
+        success: false,
+        message: "Metadata URI must use HTTPS",
+      });
+      return;
+    }
+
+    const existingNFT = await prisma.nFT.findFirst({
+      where: {
+        id,
+        creatorId: userId,
+      },
+      select: {
+        id: true,
+        mintAddress: true,
+      },
+    });
+
+    if (!existingNFT) {
+      res.status(404).json({
+        success: false,
+        message: "NFT not found or you are not its creator",
+      });
+      return;
+    }
+
+    if (existingNFT.mintAddress) {
+      res.status(409).json({
+        success: false,
+        message: "This NFT has already been minted",
+      });
+      return;
+    }
+
+    const updateResult = await prisma.nFT.updateMany({
+      where: {
+        id,
+        creatorId: userId,
+        mintAddress: null,
+      },
+      data: {
+        mintAddress,
+        metadataUri: parsedMetadataUri.toString(),
+      },
+    });
+
+    if (updateResult.count === 0) {
+      res.status(409).json({
+        success: false,
+        message: "NFT was already minted or has changed",
+      });
+      return;
+    }
+
+    const nft = await prisma.nFT.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        mintAddress: true,
+        metadataUri: true,
+        name: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "NFT mint details saved successfully",
+      nft,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      res.status(409).json({
+        success: false,
+        message: "This mint address is already associated with another NFT",
+      });
+      return;
+    }
+
+    console.error("Update NFT mint error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update NFT mint details",
+    });
+  }
+}

@@ -1,8 +1,11 @@
 "use client";
 
-import { useCreateNFT } from "@/hooks/use-create-nft";
+import { useCreateNFT, useUpdateNFTMint } from "@/hooks/use-create-nft";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { uploadNFTArtworkToCloudinary } from "@/lib/nftCloudinary";
+import { mintNFT } from "@/lib/solana/mint-nft";
+import { createWalletUmi } from "@/lib/solana/umi";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
 import CreateNftDetails from "./createNftDetails";
 import NftPreview from "./createNftReview";
@@ -17,6 +20,9 @@ export interface Trait {
 export default function CreatePage() {
   const { data: profile } = useMyProfile();
   const createNFTMutation = useCreateNFT();
+  const { connected, wallet } = useWallet();
+
+  const updateNFTMintMutation = useUpdateNFTMint();
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -26,7 +32,7 @@ export default function CreatePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const [collection, setCollection] = useState("Neon Realms");
+  const [collection, setCollection] = useState("");
 
   const [royalty, setRoyalty] = useState("5");
 
@@ -95,8 +101,58 @@ export default function CreatePage() {
     setTraits((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // const handleMint = async () => {
+  //   setSuccessMessage(null);
+  //   if (!imageFile) {
+  //     setUploadError("Please select your NFT artwork first.");
+  //     return;
+  //   }
+
+  //   if (!name.trim()) {
+  //     setUploadError("Please enter an NFT name.");
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsUploading(true);
+  //     setUploadError(null);
+
+  //     // Step 1: Upload artwork to Cloudinary.
+  //     const artworkUrl = await uploadNFTArtworkToCloudinary(imageFile);
+
+  //     // Step 2: Save the NFT details in PostgreSQL.
+  //     const result = await createNFTMutation.mutateAsync({
+  //       name: name.trim(),
+  //       description: description.trim(),
+  //       image: artworkUrl,
+  //       attributes: traits.filter(
+  //         (trait) => trait.trait_type.trim() && trait.value.trim(),
+  //       ),
+  //     });
+  //     setSuccessMessage(
+  //       "NFT saved successfully! On-chain minting is coming next.",
+  //     );
+  //     console.log("NFT saved:", result.nft);
+
+  //     // Actual Solana minting will be implemented later.
+  //   } catch (error) {
+  //     setUploadError(
+  //       error instanceof Error ? error.message : "Failed to create NFT.",
+  //     );
+  //   } finally {
+  //     setIsUploading(false);
+  //   }
+  // };
+
   const handleMint = async () => {
     setSuccessMessage(null);
+    setUploadError(null);
+
+    if (!connected || !wallet) {
+      setUploadError("Please connect your Solana wallet first.");
+      return;
+    }
+
     if (!imageFile) {
       setUploadError("Please select your NFT artwork first.");
       return;
@@ -107,14 +163,24 @@ export default function CreatePage() {
       return;
     }
 
-    try {
-      setIsUploading(true);
-      setUploadError(null);
+    const royaltyValue = Number(royalty);
 
+    if (
+      !Number.isFinite(royaltyValue) ||
+      royaltyValue < 0 ||
+      royaltyValue > 100
+    ) {
+      setUploadError("Royalty must be between 0 and 100.");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
       // Step 1: Upload artwork to Cloudinary.
       const artworkUrl = await uploadNFTArtworkToCloudinary(imageFile);
 
-      // Step 2: Save the NFT details in PostgreSQL.
+      // Step 2: Save NFT details in PostgreSQL.
       const result = await createNFTMutation.mutateAsync({
         name: name.trim(),
         description: description.trim(),
@@ -123,15 +189,48 @@ export default function CreatePage() {
           (trait) => trait.trait_type.trim() && trait.value.trim(),
         ),
       });
-      setSuccessMessage(
-        "NFT saved successfully! On-chain minting is coming next.",
-      );
-      console.log("NFT saved:", result.nft);
 
-      // Actual Solana minting will be implemented later.
+      const nftId = result.nft.id;
+
+      // Step 3: Create Umi using the connected wallet.
+      const umi = createWalletUmi(wallet.adapter);
+
+      // Step 4: Upload metadata and mint the NFT on Solana.
+      const mintedNFT = await mintNFT(umi, {
+        name: name.trim(),
+        description: description.trim(),
+        image: artworkUrl,
+        royalty: royaltyValue,
+        attributes: traits.filter(
+          (trait) => trait.trait_type.trim() && trait.value.trim(),
+        ),
+      });
+
+      // Step 5: Save the on-chain mint details in PostgreSQL.
+      try {
+        await updateNFTMintMutation.mutateAsync({
+          nftId,
+          mintAddress: mintedNFT.mintAddress,
+          metadataUri: mintedNFT.metadataUri,
+        });
+      } catch {
+        setUploadError(
+          `Your NFT was minted successfully, but we couldn't save its mint details to the database. Mint address: ${mintedNFT.mintAddress}`,
+        );
+        return;
+      }
+
+      setSuccessMessage(
+        `NFT minted successfully! Mint address: ${mintedNFT.mintAddress}`,
+      );
+
+      console.log(
+        "Full transaction signature:",
+        mintedNFT.transactionSignature,
+      );
     } catch (error) {
       setUploadError(
-        error instanceof Error ? error.message : "Failed to create NFT.",
+        error instanceof Error ? error.message : "Failed to mint NFT.",
       );
     } finally {
       setIsUploading(false);

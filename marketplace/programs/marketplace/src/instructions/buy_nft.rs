@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-
+use anchor_spl::token::{
+    self, CloseAccount, Mint, Token, TokenAccount, Transfer,
+};
 
 use crate::constants::{ESCROW_SEED, LISTING_SEED};
 use crate::state::{Listing, Marketplace};
@@ -16,6 +17,7 @@ pub struct BuyNft<'info> {
 
     #[account(
         mut,
+        close = seller,
         seeds = [
             LISTING_SEED,
             marketplace.key().as_ref(),
@@ -151,7 +153,19 @@ let listing = &ctx.accounts.listing;
 
     token::transfer(transfer_context, 1)?;
      // Mark the listing as sold.
-    ctx.accounts.listing.active = false;    
+     let close_accounts = CloseAccount {
+    account: ctx.accounts.escrow_token_account.to_account_info(),
+    destination: ctx.accounts.seller.to_account_info(),
+    authority: ctx.accounts.listing.to_account_info(),
+};
+
+let close_context = CpiContext::new_with_signer(
+    ctx.accounts.token_program.key(),
+    close_accounts,
+    signer_seeds,
+);
+
+token::close_account(close_context)?;
     Ok(())
 
 

@@ -101,23 +101,17 @@ export default function CreateNftDetails({
           Collection <span className="text-red-400">*</span>
         </label>
 
-        <div className="relative">
-          <select
-            value={collection}
-            onChange={(event) => onCollectionChange(event.target.value)}
-            className="w-full appearance-none rounded-xl border border-blue-500/30 bg-[#06172f] px-4 py-3 text-sm text-white outline-none focus:border-purple-500"
-          >
-            <option value="Neon Realms">Neon Realms</option>
-            <option value="Cyber Souls">Cyber Souls</option>
-            <option value="Digital Dreams">Digital Dreams</option>
-            <option value="Solana Legends">Solana Legends</option>
-          </select>
-
-          <FaChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500" />
-        </div>
+        <input
+          type="text"
+          value={collection}
+          maxLength={50}
+          onChange={(event) => onCollectionChange(event.target.value)}
+          placeholder="Enter a collection name"
+          className="w-full rounded-xl border border-blue-500/30 bg-[#06172f] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-purple-500"
+        />
 
         <p className="mt-2 text-xs text-slate-500">
-          Choose the collection where this NFT will be minted.
+          Enter the name of the collection for this NFT.
         </p>
       </div>
 

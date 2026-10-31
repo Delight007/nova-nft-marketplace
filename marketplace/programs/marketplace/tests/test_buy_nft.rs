@@ -266,6 +266,14 @@ fn test_buy_nft_transfers_payment_and_nft() {
         .to_account_metas(None),
     );
 
+    let listing_rent = svm
+    .get_balance(&listing_pda)
+    .unwrap();
+
+let escrow_rent = svm
+    .get_balance(&escrow_pda)
+    .unwrap();
+
     
     // Record balances before the purchase.
     let seller_balance_before =
@@ -282,16 +290,22 @@ fn test_buy_nft_transfers_payment_and_nft() {
     );
 
     
-    // Verify the seller received 0.975 SOL.
-    let seller_balance_after =
-        svm.get_balance(&seller.pubkey()).unwrap();
+    // The seller receives 0.975 SOL from the sale.
+// The listing and escrow accounts are also closed,
+// so their rent is refunded to the seller.
+// The seller receives 0.975 SOL from the sale,
+// plus the rent refunds from the closed listing and escrow accounts.
+let seller_balance_after =
+    svm.get_balance(&seller.pubkey()).unwrap();
 
-    assert_eq!(
-        seller_balance_after - seller_balance_before,
-        975_000_000,
-        "Seller should receive 0.975 SOL"
-    );
+let expected_seller_increase =
+    975_000_000 + listing_rent + escrow_rent;
 
+assert_eq!(
+    seller_balance_after - seller_balance_before,
+    expected_seller_increase,
+    "Seller should receive the sale payment plus rent refunds"
+);
     // Verify the treasury received the 2.5% fee.
     let treasury_balance_after =
         svm.get_balance(&treasury.pubkey()).unwrap();
@@ -317,34 +331,20 @@ fn test_buy_nft_transfers_payment_and_nft() {
         "Buyer should receive exactly one NFT"
     );
 
-    // Verify escrow no longer holds the NFT.
-    let escrow_token = svm.get_account(&escrow_pda).unwrap();
 
-    let escrow_amount = u64::from_le_bytes(
-        escrow_token.data[64..72].try_into().unwrap(),
-    );
+    // Verify escrow and listing accounts were closed.
+assert!(
+    svm.get_account(&escrow_pda).is_none(),
+    "Escrow account should be closed after purchase"
+);
 
-    assert_eq!(
-        escrow_amount,
-        0,
-        "Escrow should no longer hold the NFT"
-    );
-
-    // Verify the listing is inactive.
-    let listing_account = svm.get_account(&listing_pda).unwrap();
-    let mut listing_data: &[u8] = &listing_account.data;
-
-    let listing =
-        marketplace::state::Listing::try_deserialize(&mut listing_data)
-            .unwrap();
-
-    assert!(
-        !listing.active,
-        "Listing should be inactive after purchase"
-    );
+assert!(
+    svm.get_account(&listing_pda).is_none(),
+    "Listing account should be closed after purchase"
+);
 
 
-    
+
     // Attempt to buy the same NFT again after it has been sold.
     let second_buy_ix = Instruction::new_with_bytes(
         program_id,
@@ -397,19 +397,11 @@ fn test_buy_nft_transfers_payment_and_nft() {
         "The first buyer must retain the NFT"
     );
 
-    // Confirm the listing remains inactive.
-    let listing_account_after = svm.get_account(&listing_pda).unwrap();
-    let mut listing_data_after: &[u8] = &listing_account_after.data;
-
-    let listing_after =
-        marketplace::state::Listing::try_deserialize(&mut listing_data_after)
-            .unwrap();
-
-    assert!(
-        !listing_after.active,
-        "The listing must remain inactive after the rejected purchase"
-    );
-
+   // Confirm the listing remains closed after the rejected purchase.
+assert!(
+    svm.get_account(&listing_pda).is_none(),
+    "Listing should remain closed after the rejected purchase"
+);
  
 }
 

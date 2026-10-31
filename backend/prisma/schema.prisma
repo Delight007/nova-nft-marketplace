@@ -7,6 +7,178 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id             String       @id @default(cuid())
+  wallet         String       @unique
+  username       String?      @unique
+  avatar         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  bio            String?      @db.VarChar(300)
+  discord        String?
+  twitter        String?
+  website        String?
+  banner         String?
+  activities     Activity[]
+  collections    Collection[] @relation("CollectionCreator")
+  following      Follow[]     @relation("UserFollowing")
+  followers      Follow[]     @relation("UserFollowers")
+  listings       Listing[]    @relation("SellerListings")
+  createdNFTs    NFT[]        @relation("NFTCreator")
+  ownedNFTs      NFT[]        @relation("NFTOwner")
+  offersMade     Offer[]      @relation("OfferMaker")
+  offersReceived Offer[]      @relation("OfferReceiver")
+  purchases      Sale[]       @relation("BuyerSales")
+  sales          Sale[]       @relation("SellerSales")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  address     String?  @unique
+  name        String
+  slug        String   @unique
+  description String?
+  image       String?
+  banner      String?
+  website     String?
+  twitter     String?
+  discord     String?
+  verified    Boolean  @default(false)
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator     User     @relation("CollectionCreator", fields: [creatorId], references: [id])
+  nfts        NFT[]
+}
+
+model NFT {
+  id           String      @id @default(cuid())
+  mintAddress String? @unique
+  name         String
+  description  String?
+  image        String
+  metadataUri  String?
+  attributes   Json?
+  collectionId String?
+  creatorId    String
+  ownerId      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  activities   Activity[]
+  listings     Listing[]
+  collection   Collection? @relation(fields: [collectionId], references: [id])
+  creator      User        @relation("NFTCreator", fields: [creatorId], references: [id])
+  owner        User        @relation("NFTOwner", fields: [ownerId], references: [id])
+  offers       Offer[]
+  sales        Sale[]
+
+  @@index([collectionId])
+  @@index([creatorId])
+  @@index([ownerId])
+}
+
+model Listing {
+  id                   String        @id @default(cuid())
+  nftId                String
+  sellerId             String
+  price                Decimal       @db.Decimal(20, 9)
+  currency             String        @default("SOL")
+  status               ListingStatus @default(ACTIVE)
+  transactionSignature String?       @unique
+  listedAt             DateTime      @default(now())
+  soldAt               DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  nft                  NFT           @relation(fields: [nftId], references: [id])
+  seller               User          @relation("SellerListings", fields: [sellerId], references: [id])
+
+  @@index([nftId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model Sale {
+  id                   String   @id @default(cuid())
+  nftId                String
+  buyerId              String
+  sellerId             String
+  price                Decimal  @db.Decimal(20, 9)
+  currency             String   @default("SOL")
+  transactionSignature String   @unique
+  createdAt            DateTime @default(now())
+  buyer                User     @relation("BuyerSales", fields: [buyerId], references: [id])
+  nft                  NFT      @relation(fields: [nftId], references: [id])
+  seller               User     @relation("SellerSales", fields: [sellerId], references: [id])
+
+  @@index([nftId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Activity {
+  id                   String       @id @default(cuid())
+  type                 ActivityType
+  nftId                String
+  userId               String?
+  price                Decimal?     @db.Decimal(20, 9)
+  currency             String?
+  transactionSignature String?      @unique
+  createdAt            DateTime     @default(now())
+  nft                  NFT          @relation(fields: [nftId], references: [id])
+  user                 User?        @relation(fields: [userId], references: [id])
+
+  @@index([nftId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Offer {
+  id                   String      @id @default(cuid())
+  nftId                String
+  makerId              String
+  receiverId           String
+  amount               Decimal     @db.Decimal(20, 9)
+  currency             String      @default("SOL")
+  status               OfferStatus @default(PENDING)
+  expiresAt            DateTime?
+  transactionSignature String?     @unique
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  maker                User        @relation("OfferMaker", fields: [makerId], references: [id])
+  nft                  NFT         @relation(fields: [nftId], references: [id])
+  receiver             User        @relation("OfferReceiver", fields: [receiverId], references: [id])
+
+  @@index([nftId])
+  @@index([makerId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model WalletChallenge {
+  id        String   @id @default(cuid())
+  wallet    String
+  nonce     String   @unique
+  message   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([wallet])
+  @@index([expiresAt])
+}
+
 enum ListingStatus {
   ACTIVE
   SOLD
@@ -31,217 +203,4 @@ enum OfferStatus {
   REJECTED
   CANCELLED
   EXPIRED
-}
-
-model User {
-  id       String  @id @default(cuid())
-  wallet   String  @unique
-  username String? @unique
-  avatar   String?
-  banner   String?
-  bio      String? @db.VarChar(300)
-  website  String?
-  twitter  String?
-  discord  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  followers  Follow[] @relation("UserFollowers")
-  following  Follow[] @relation("UserFollowing")
-
-  ownedNFTs     NFT[]      @relation("NFTOwner")
-  createdNFTs   NFT[]      @relation("NFTCreator")
-  collections   Collection[] @relation("CollectionCreator")
-  listings      Listing[]  @relation("SellerListings")
-  purchases     Sale[]     @relation("BuyerSales")
-  sales         Sale[]     @relation("SellerSales")
-  activities    Activity[]
-  offersMade    Offer[]    @relation("OfferMaker")
-  offersReceived Offer[]   @relation("OfferReceiver")
-}
-
-model Follow {
-  id          String   @id @default(cuid())
-  followerId  String
-  followingId String
-  createdAt   DateTime @default(now())
-
-  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@unique([followerId, followingId])
-  @@index([followingId])
-}
-
-model Collection {
-  id          String   @id @default(cuid())
-  address     String?  @unique
-  name        String
-  slug        String   @unique
-  description String?
-  image       String?
-  banner      String?
-  website     String?
-  twitter     String?
-  discord     String?
-  verified    Boolean  @default(false)
-
-  creatorId String
-  creator   User     @relation("CollectionCreator", fields: [creatorId], references: [id])
-
-  nfts      NFT[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model NFT {
-  id          String   @id @default(cuid())
-  mintAddress String? @unique
-  name        String
-  description String?
-  image       String
-  metadataUri String?
-
-  attributes  Json?
-
-  collectionId String?
-  collection   Collection? @relation(fields: [collectionId], references: [id])
-
-  creatorId String
-  creator   User     @relation("NFTCreator", fields: [creatorId], references: [id])
-
-  ownerId String
-  owner   User     @relation("NFTOwner", fields: [ownerId], references: [id])
-
-  listings  Listing[]
-  sales     Sale[]
-  activities Activity[]
-  offers    Offer[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([collectionId])
-  @@index([creatorId])
-  @@index([ownerId])
-}
-
-model Listing {
-  id        String        @id @default(cuid())
-
-  nftId     String
-  nft       NFT           @relation(fields: [nftId], references: [id])
-
-  sellerId  String
-  seller    User          @relation("SellerListings", fields: [sellerId], references: [id])
-
-  price     Decimal       @db.Decimal(20, 9)
-  currency  String        @default("SOL")
-
-  status    ListingStatus @default(ACTIVE)
-
-  transactionSignature String? @unique
-
-  listedAt   DateTime @default(now())
-  soldAt     DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([nftId])
-  @@index([sellerId])
-  @@index([status])
-}
-
-model Sale {
-  id        String   @id @default(cuid())
-
-  nftId     String
-  nft       NFT      @relation(fields: [nftId], references: [id])
-
-  buyerId   String
-  buyer     User     @relation("BuyerSales", fields: [buyerId], references: [id])
-
-  sellerId  String
-  seller    User     @relation("SellerSales", fields: [sellerId], references: [id])
-
-  price    Decimal  @db.Decimal(20, 9)
-  currency String   @default("SOL")
-
-  transactionSignature String @unique
-
-  createdAt DateTime @default(now())
-
-  @@index([nftId])
-  @@index([buyerId])
-  @@index([sellerId])
-}
-
-model Activity {
-  id        String       @id @default(cuid())
-
-  type      ActivityType
-
-  nftId     String
-  nft       NFT          @relation(fields: [nftId], references: [id])
-
-  userId    String?
-  user      User?        @relation(fields: [userId], references: [id])
-
-  price    Decimal?      @db.Decimal(20, 9)
-  currency  String?
-
-  transactionSignature String? @unique
-
-  createdAt DateTime @default(now())
-
-  @@index([nftId])
-  @@index([userId])
-  @@index([type])
-  @@index([createdAt])
-}
-
-model Offer {
-  id        String      @id @default(cuid())
-
-  nftId     String
-  nft       NFT         @relation(fields: [nftId], references: [id])
-
-  makerId   String
-  maker     User        @relation("OfferMaker", fields: [makerId], references: [id])
-
-  receiverId String
-  receiver   User        @relation("OfferReceiver", fields: [receiverId], references: [id])
-
-  amount    Decimal     @db.Decimal(20, 9)
-  currency  String      @default("SOL")
-
-  status    OfferStatus @default(PENDING)
-
-  expiresAt DateTime?
-
-  transactionSignature String? @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([nftId])
-  @@index([makerId])
-  @@index([receiverId])
-  @@index([status])
-}
-
-
-model WalletChallenge {
-  id        String   @id @default(cuid())
-  wallet    String
-  nonce     String   @unique
-  message   String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([wallet])
-  @@index([expiresAt])
 }

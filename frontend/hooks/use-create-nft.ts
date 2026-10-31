@@ -46,3 +46,57 @@ export function useCreateNFT() {
     },
   });
 }
+
+export interface UpdateNFTMintPayload {
+  nftId: string;
+  mintAddress: string;
+  metadataUri: string;
+}
+
+interface UpdateNFTMintResponse {
+  success: boolean;
+  message: string;
+  nft: {
+    id: string;
+    mintAddress: string;
+    metadataUri: string;
+    name: string;
+    image: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+async function updateNFTMint({
+  nftId,
+  mintAddress,
+  metadataUri,
+}: UpdateNFTMintPayload): Promise<UpdateNFTMintResponse> {
+  const response = await api.patch<UpdateNFTMintResponse>(
+    `/api/nfts/${nftId}/mint`,
+    {
+      mintAddress,
+      metadataUri,
+    },
+  );
+
+  return response.data;
+}
+
+export function useUpdateNFTMint() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateNFTMint,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["my-profile-stats"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["my-profile"],
+        }),
+      ]);
+    },
+  });
+}
