@@ -3,11 +3,13 @@
 import type { Trait } from "@/components/createNft/createNft";
 import api from "@/lib/axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MY_COLLECTED_NFTS_QUERY_KEY } from "./use-my-collected-nfts";
 
 export interface CreateNFTPayload {
   name: string;
   description: string;
   image: string;
+  collection: string;
   attributes: Trait[];
 }
 
@@ -95,6 +97,9 @@ export function useUpdateNFTMint() {
         }),
         queryClient.invalidateQueries({
           queryKey: ["my-profile"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: MY_COLLECTED_NFTS_QUERY_KEY,
         }),
       ]);
     },

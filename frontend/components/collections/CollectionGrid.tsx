@@ -416,7 +416,11 @@ export default function CollectionGrid({
               >
                 <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg sm:h-24 sm:w-24">
                   <CollectionImage
-                    src={collection.banner || "/images/n.png"}
+                    src={
+                      collection.previewImage ||
+                      collection.banner ||
+                      "/images/n.png"
+                    }
                     alt={collection.name}
                     sizes="96px"
                     className="object-cover"

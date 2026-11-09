@@ -141,7 +141,7 @@ export default function NFTArtworkGallery({
           <div className="absolute inset-0 bg-gradient-to-t from-[#030817]/50 via-transparent to-transparent" />
 
           <span className="absolute right-3 top-3 rounded-lg border border-white/10 bg-[#030a18]/80 px-3 py-1.5 text-xs font-semibold backdrop-blur-md">
-            #{nft.mintAddress.slice(0, 8)}
+            {nft.mintAddress ? `#${nft.mintAddress.slice(0, 8)}` : "Not minted"}
           </span>
 
           <button

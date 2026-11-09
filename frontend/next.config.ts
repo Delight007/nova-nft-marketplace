@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  env: {
+    ANCHOR_BROWSER: "true",
+  },
   experimental: {
     agentFeedback: true,
   },
@@ -21,6 +24,12 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/*/image/upload/**",
+        search: "",
       },
     ],
   },

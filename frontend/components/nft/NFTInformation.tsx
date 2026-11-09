@@ -113,37 +113,37 @@ import NFTPurchaseCard from "./NFTPurchaseCard";
 type NFTInformationProps = {
   nft?: NFTDetailsData;
   isLoading?: boolean;
+  isOwner: boolean;
   favorite: boolean;
   copied: boolean;
-  offerOpen: boolean;
-  offerPrice: string;
   showMore: boolean;
   onCopyAddress: () => void;
   onFavorite: () => void;
-  onOfferOpen: () => void;
-  onOfferPriceChange: (price: string) => void;
   onShare: () => void;
   onShowMore: () => void;
   onCloseMore: () => void;
   onAction: (message: string) => void;
+  onBuy: () => void;
+  onList: () => void;
+  onCancelListing: () => void;
 };
 
 export default function NFTInformation({
   nft,
   isLoading = false,
+  isOwner,
   favorite,
   copied,
-  offerOpen,
-  offerPrice,
   showMore,
   onCopyAddress,
   onFavorite,
-  onOfferOpen,
-  onOfferPriceChange,
   onShare,
   onShowMore,
   onCloseMore,
   onAction,
+  onBuy,
+  onList,
+  onCancelListing,
 }: NFTInformationProps) {
   if (isLoading || !nft) {
     return (
@@ -171,13 +171,15 @@ export default function NFTInformation({
   const shortOwner = `${ownerWallet.slice(0, 6)}...${ownerWallet.slice(-4)}`;
 
   const activeListing = nft.listing;
+  const collectionImage =
+    collection?.previewImage || collection?.banner || collection?.image;
 
   return (
     <div className="min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto">
       <div className="mb-4 flex items-center gap-3">
-        {collection?.image ? (
+        {collectionImage ? (
           <img
-            src={collection.image}
+            src={collectionImage}
             alt={collection.name}
             className="h-12 w-12 rounded-full border border-violet-500/40 object-cover"
           />
@@ -268,17 +270,18 @@ export default function NFTInformation({
       </div>
 
       <NFTPurchaseCard
+        nft={nft}
+        isOwner={isOwner}
         favorite={favorite}
-        offerOpen={offerOpen}
-        offerPrice={offerPrice}
         showMore={showMore}
         onFavorite={onFavorite}
-        onOfferOpen={onOfferOpen}
-        onOfferPriceChange={onOfferPriceChange}
         onShare={onShare}
         onShowMore={onShowMore}
         onCloseMore={onCloseMore}
         onAction={onAction}
+        onBuy={onBuy}
+        onList={onList}
+        onCancelListing={onCancelListing}
       />
     </div>
   );

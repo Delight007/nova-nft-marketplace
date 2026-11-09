@@ -163,6 +163,11 @@ export default function CreatePage() {
       return;
     }
 
+    if (!collection.trim()) {
+      setUploadError("Please enter a collection name.");
+      return;
+    }
+
     const royaltyValue = Number(royalty);
 
     if (
@@ -185,6 +190,7 @@ export default function CreatePage() {
         name: name.trim(),
         description: description.trim(),
         image: artworkUrl,
+        collection: collection.trim(),
         attributes: traits.filter(
           (trait) => trait.trait_type.trim() && trait.value.trim(),
         ),
@@ -200,6 +206,7 @@ export default function CreatePage() {
         name: name.trim(),
         description: description.trim(),
         image: artworkUrl,
+        collection: collection.trim(),
         royalty: royaltyValue,
         attributes: traits.filter(
           (trait) => trait.trait_type.trim() && trait.value.trim(),

@@ -4,7 +4,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import bs58 from "bs58";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -14,7 +13,7 @@ import {
   useCurrentUser,
 } from "@/hooks/use-current-user";
 import { api } from "@/lib/axios";
-import { getCurrentUser } from "@/lib/auth";
+import { authenticateWalletSession } from "@/lib/auth";
 
 const navLinks = [
   { name: "Explore", href: "/" },
@@ -52,52 +51,8 @@ export default function Navbar() {
     setAuthError("");
 
     try {
-      // 1. Request a one-time challenge from the backend.
-      const challengeResponse = await api.post<{
-        success: boolean;
-        message?: string;
-        data: { message: string };
-      }>("/api/auth/challenge", { wallet: walletAddress });
-      const challengeResult = challengeResponse.data;
-
-      if (!challengeResult.success) {
-        throw new Error(
-          challengeResult.message ?? "Unable to request sign-in challenge.",
-        );
-      }
-
-      const message: string = challengeResult.data.message;
-
-      // 2. Ask the wallet to sign the exact message.
-      const signatureBytes = await signMessage(
-        new TextEncoder().encode(message),
-      );
-
-      const signature = bs58.encode(signatureBytes);
-
-      // 3. Verify the signature and receive the session cookie.
-      const verifyResponse = await api.post<{
-        success: boolean;
-        message?: string;
-      }>("/api/auth/verify", {
-        wallet: walletAddress,
-        signature,
-      });
-      const verifyResult = verifyResponse.data;
-
-      if (!verifyResult.success) {
-        throw new Error(verifyResult.message ?? "Wallet verification failed.");
-      }
-
-      const user = await queryClient.fetchQuery({
-        queryKey: CURRENT_USER_QUERY_KEY,
-        queryFn: getCurrentUser,
-        staleTime: 0,
-      });
-
-      if (!user || user.wallet !== walletAddress) {
-        throw new Error("Session verification failed. Please try again.");
-      }
+      const user = await authenticateWalletSession(walletAddress, signMessage);
+      queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
     } catch (error) {
       setAuthError(
         axios.isAxiosError<{ message?: string }>(error)

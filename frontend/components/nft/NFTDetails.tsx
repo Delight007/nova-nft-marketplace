@@ -120,13 +120,20 @@
 "use client";
 
 import { useNFTDetails } from "@/hooks/use-nft-details";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { useState } from "react";
 import { FiArrowLeft, FiBell } from "react-icons/fi";
+import BuyNFTModal from "@/components/collections/collectionItems/BuyNFTModal";
+import CancelListingModal from "@/components/profile/cancelListingModal";
+import ListNFTModal from "@/components/profile/listNFTModal";
+import type { CollectedNFT } from "@/services/user";
 import NFTArtworkGallery from "./NFTArtworkGallery";
 import NFTDetailsPanel from "./NFTDetailsPanel";
 import NFTInformation from "./NFTInformation";
 import NFTSidebar from "./NFTSidebar";
+import { nftKeys } from "@/hooks/use-nft-details";
 
 type NFTDetailsProps = {
   id: string;
@@ -134,13 +141,61 @@ type NFTDetailsProps = {
 
 export default function NFTDetails({ id }: NFTDetailsProps) {
   const { data: nft, isPending, isError, error } = useNFTDetails(id);
+  const { publicKey } = useWallet();
+  const queryClient = useQueryClient();
 
   const [favorite, setFavorite] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState("");
-  const [offerOpen, setOfferOpen] = useState(false);
-  const [offerPrice, setOfferPrice] = useState("7.5");
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [cancelListingOpen, setCancelListingOpen] = useState(false);
+
+  const connectedWallet = publicKey?.toBase58();
+  const isOwner =
+    Boolean(nft && connectedWallet) &&
+    nft?.owner.wallet.toLowerCase() === connectedWallet?.toLowerCase();
+
+  const listingNFT: (Omit<CollectedNFT, "mintAddress"> & {
+    mintAddress: string;
+  }) | null =
+    nft?.mintAddress && nft
+      ? {
+          id: nft.id,
+          mintAddress: nft.mintAddress,
+          name: nft.name,
+          description: nft.description,
+          image: nft.image,
+          metadataUri: nft.metadataUri,
+          attributes: nft.attributes,
+          createdAt: nft.createdAt,
+          collection: nft.collection
+            ? {
+                id: nft.collection.id,
+                name: nft.collection.name,
+                slug: nft.collection.slug,
+                image:
+                  nft.collection.previewImage ??
+                  nft.collection.banner ??
+                  nft.collection.image,
+                verified: nft.collection.verified,
+              }
+            : null,
+          listing: nft.listing
+            ? {
+                id: nft.listing.id,
+                price: String(nft.listing.price),
+                currency: nft.listing.currency,
+                listedAt: nft.listing.listedAt,
+              }
+            : null,
+        }
+      : null;
+
+  const refreshNFT = async () => {
+    await queryClient.invalidateQueries({ queryKey: nftKeys.details(id) });
+  };
 
   const copyAddress = async () => {
     if (!nft) return;
@@ -216,19 +271,19 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
           <NFTInformation
             nft={nft}
             isLoading={isPending}
+            isOwner={isOwner}
             favorite={favorite}
             copied={copied}
-            offerOpen={offerOpen}
-            offerPrice={offerPrice}
             showMore={showMore}
             onCopyAddress={copyAddress}
             onFavorite={() => setFavorite((previous) => !previous)}
-            onOfferOpen={() => setOfferOpen((previous) => !previous)}
-            onOfferPriceChange={setOfferPrice}
             onShare={shareNFT}
             onShowMore={() => setShowMore(true)}
             onCloseMore={() => setShowMore(false)}
             onAction={setNotice}
+            onBuy={() => setBuyOpen(true)}
+            onList={() => setListOpen(true)}
+            onCancelListing={() => setCancelListingOpen(true)}
           />
           <NFTSidebar
             nft={nft}
@@ -256,6 +311,47 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
           </div>
         </footer>
       </div>
+
+      {nft && buyOpen && (
+        <BuyNFTModal
+          nft={{
+            id: nft.id,
+            mintAddress: nft.mintAddress,
+            name: nft.name,
+            image: nft.image,
+            collection: nft.collection?.name ?? "Uncategorized",
+            price: nft.listing?.price ?? null,
+          }}
+          collectionSlug={nft.collection?.slug ?? ""}
+          onClose={() => setBuyOpen(false)}
+          onSuccess={() => {
+            setBuyOpen(false);
+            void refreshNFT();
+          }}
+        />
+      )}
+
+      {listingNFT && listOpen && (
+        <ListNFTModal
+          nft={listingNFT}
+          onClose={() => setListOpen(false)}
+          onSuccess={() => {
+            setListOpen(false);
+            void refreshNFT();
+          }}
+        />
+      )}
+
+      {listingNFT && cancelListingOpen && (
+        <CancelListingModal
+          nft={listingNFT}
+          onClose={() => setCancelListingOpen(false)}
+          onSuccess={() => {
+            setCancelListingOpen(false);
+            void refreshNFT();
+          }}
+        />
+      )}
 
       {notice && (
         <div

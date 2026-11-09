@@ -90,7 +90,7 @@ function TrendingCollectionCard({ collection }: { collection: Collection }) {
     >
       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/10">
         <Image
-          src={collection.banner || "/images/n.png"}
+          src={collection.previewImage || collection.banner || "/images/n.png"}
           alt={collection.name}
           fill
           sizes="40px"

@@ -1,31 +1,3 @@
-// import api from "@/lib/axios";
-
-// export type Collection = {
-//   id: string;
-//   name: string;
-//   slug: string;
-//   creator: string;
-//   creatorAvatar: string | null;
-//   banner: string | null;
-//   items: number;
-//   floorPrice: number;
-//   volume: number;
-//   verified: boolean;
-//   isNew: boolean;
-//   activeTrading: boolean;
-// };
-
-// type ApiResponse<T> = {
-//   success: boolean;
-//   data: T;
-// };
-
-// export async function getCollections(): Promise<Collection[]> {
-//   const response = await api.get<ApiResponse<Collection[]>>("/api/collections");
-
-//   return response.data.data;
-// }
-
 import api from "@/lib/axios";
 
 export type Collection = {
@@ -35,6 +7,7 @@ export type Collection = {
   creator: string;
   creatorAvatar: string | null;
   banner: string | null;
+  previewImage: string | null;
   items: number;
   floorPrice: number;
   volume: number;

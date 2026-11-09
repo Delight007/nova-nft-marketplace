@@ -10,8 +10,8 @@ import {
 } from "react-icons/fi";
 import { SiSolana } from "react-icons/si";
 import CollectionImage from "../CollectionImage";
-import { rarityColors } from "./collectionItemsData";
 import type { NFTItem } from "./collectionItemsData";
+import { rarityColors } from "./collectionItemsData";
 
 type CollectionItemCardProps = {
   item: NFTItem;
@@ -72,9 +72,7 @@ export default function CollectionItemCard({
             event.stopPropagation();
             onToggleFavorite(item.id);
           }}
-          aria-label={
-            isFavorite ? "Remove from favorites" : "Add to favorites"
-          }
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-md transition ${
             isFavorite
               ? "border-pink-400/40 bg-pink-500/20 text-pink-400"
@@ -107,22 +105,45 @@ export default function CollectionItemCard({
 
         <div className="mt-3 flex items-center justify-between gap-2">
           <div>
-            <div className="flex items-center gap-1.5">
-              <SiSolana
-                aria-label="Solana"
-                className="shrink-0 text-sm text-cyan-400"
-              />
-              <span className="text-sm font-semibold text-white">
-                {item.price.toFixed(1)} SOL
-              </span>
-            </div>
-            <p className="mt-1 pl-6 text-[10px] text-slate-500">
-              ≈ ${usdPrice(item.price)}
-            </p>
+            {item.price !== null ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <SiSolana
+                    aria-label="Solana"
+                    className="shrink-0 text-sm text-cyan-400"
+                  />
+                  <span className="text-sm font-semibold text-white">
+                    {item.price.toFixed(1)} SOL
+                  </span>
+                </div>
+                <p className="mt-1 pl-6 text-[10px] text-slate-500">
+                  ≈ ${usdPrice(item.price)}
+                </p>
+              </>
+            ) : (
+              <span className="text-xs text-slate-500">Not listed</span>
+            )}
           </div>
 
           {item.status === "Listed" ? (
+            item.isOwner ? (
+              <span className="rounded-lg border border-purple-500/30 px-3 py-2 text-[10px] font-semibold text-purple-300 sm:text-[11px]">
+                <FiTag className="mr-1 inline" size={12} />
+                Your Listing
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onBuy?.(item)}
+                className="rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-2 text-[10px] font-semibold text-white shadow-[0_0_18px_rgba(124,58,237,0.12)] transition hover:brightness-110 sm:text-[11px]"
+              >
+                <FiShoppingBag className="mr-1 inline" size={12} />
+                Buy Now
+              </button>
+            )
+          ) : item.isOwner ? (
             <button
+              type="button"
               onClick={() => onListForSale?.(item)}
               className="rounded-lg border border-purple-500/50 px-3 py-2 text-[10px] font-semibold text-purple-300 transition hover:bg-purple-500/10 sm:text-[11px]"
             >
@@ -130,13 +151,9 @@ export default function CollectionItemCard({
               List for Sale
             </button>
           ) : (
-            <button
-              onClick={() => onBuy?.(item)}
-              className="rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-2 text-[10px] font-semibold text-white shadow-[0_0_18px_rgba(124,58,237,0.12)] transition hover:brightness-110 sm:text-[11px]"
-            >
-              <FiShoppingBag className="mr-1 inline" size={12} />
-              Buy Now
-            </button>
+            <span className="text-[10px] text-slate-500 sm:text-[11px]">
+              Not for sale
+            </span>
           )}
         </div>
 
@@ -147,11 +164,13 @@ export default function CollectionItemCard({
           </span>
           <span className="flex items-center gap-1.5">
             <FiClock size={12} />
-            {item.listedDaysAgo === 1
-              ? "1 day ago"
-              : item.listedDaysAgo < 7
-                ? `${item.listedDaysAgo} days ago`
-                : "1 week ago"}
+            {item.status === "Listed"
+              ? item.listedDaysAgo === 0
+                ? "Listed today"
+                : item.listedDaysAgo === 1
+                  ? "Listed 1 day ago"
+                  : `Listed ${item.listedDaysAgo} days ago`
+              : "Not listed"}
           </span>
         </div>
       </div>

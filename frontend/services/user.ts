@@ -17,7 +17,7 @@ export type UserProfile = {
 
 export type CollectedNFT = {
   id: string;
-  mintAddress: string;
+  mintAddress: string | null;
   name: string;
   description: string | null;
   image: string;

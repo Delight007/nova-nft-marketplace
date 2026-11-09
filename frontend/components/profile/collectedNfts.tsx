@@ -203,7 +203,7 @@ export default function CollectedNfts({
       const matchesSearch =
         nft.name.toLowerCase().includes(search.toLowerCase()) ||
         nft.collection?.name.toLowerCase().includes(search.toLowerCase()) ||
-        nft.mintAddress.toLowerCase().includes(search.toLowerCase());
+        nft.mintAddress?.toLowerCase().includes(search.toLowerCase());
 
       const matchesCollection =
         collectionFilter === "all" || nft.collection?.id === collectionFilter;
@@ -367,7 +367,13 @@ export default function CollectedNfts({
           }
         >
           {filteredNFTs.map((nft) => (
-            <ProfileNftCard key={nft.id} nft={nft} view={view} />
+            <ProfileNftCard
+              key={nft.id}
+              nft={nft}
+              view={view}
+              canList={mode === "collected" && !nft.listing}
+              canCancel={mode === "listed" && Boolean(nft.listing)}
+            />
           ))}
         </div>
       )}

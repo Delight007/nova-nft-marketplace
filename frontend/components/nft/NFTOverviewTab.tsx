@@ -182,8 +182,22 @@
 "use client";
 
 import type { NFTDetailsData } from "@/services/nfts";
-import { FaWallet } from "react-icons/fa6";
-import { FiArrowRight, FiCheck, FiExternalLink, FiTag } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiAward,
+  FiCheck,
+  FiCheckCircle,
+  FiExternalLink,
+  FiMessageCircle,
+  FiRefreshCw,
+  FiTag,
+  FiXCircle,
+} from "react-icons/fi";
+import {
+  getActivityDescription,
+  getNFTActivityEvents,
+  type NFTActivityEvent,
+} from "./nftActivity";
 
 type NFTOverviewTabProps = {
   nft: NFTDetailsData;
@@ -199,6 +213,7 @@ export default function NFTOverviewTab({
   onShowActivity,
 }: NFTOverviewTabProps) {
   const collection = nft.collection;
+  const mintAddress = nft.mintAddress;
 
   const attributes = Array.isArray(nft.attributes)
     ? nft.attributes.filter(
@@ -207,42 +222,13 @@ export default function NFTOverviewTab({
       )
     : [];
 
-  const recentActivity = [
-    ...nft.activities.map((item) => ({
-      id: item.id,
-      title: item.type,
-      detail: item.user?.username || item.user?.wallet || "Unknown wallet",
-      date: item.createdAt,
-      type: item.type.toLowerCase(),
-      price: item.price,
-      currency: item.currency,
-    })),
-    ...nft.sales.map((sale) => ({
-      id: sale.id,
-      title: "Sale",
-      detail: `Buyer: ${sale.buyer.username || sale.buyer.wallet}`,
-      date: sale.createdAt,
-      type: "sale",
-      price: sale.price,
-      currency: sale.currency,
-    })),
-  ]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 4);
-
-  const shortenAddress = (address: string) =>
-    address.length > 14
-      ? `${address.slice(0, 6)}...${address.slice(-4)}`
-      : address;
+  const recentActivity = getNFTActivityEvents(nft).slice(-4);
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleString(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
     });
-
-  const formatActivityTitle = (type: string) =>
-    type.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   return (
     <div className="grid grid-cols-1 gap-0 lg:grid-cols-[1.2fr_1.2fr_0.8fr_0.85fr]">
@@ -255,9 +241,14 @@ export default function NFTOverviewTab({
 
         <div className="mt-5 rounded-xl border border-[#172c4c] bg-[#040d1e] p-3.5">
           <div className="flex items-center gap-3">
-            {collection?.image ? (
+            {collection?.previewImage || collection?.banner || collection?.image ? (
               <img
-                src={collection.image}
+                src={
+                  collection.previewImage ||
+                  collection.banner ||
+                  collection.image ||
+                  ""
+                }
                 alt={collection.name}
                 className="h-20 w-24 rounded-lg object-cover"
               />
@@ -346,12 +337,15 @@ export default function NFTOverviewTab({
         <div className="mt-5 space-y-5 text-xs">
           <ContractField
             label="Mint Address"
-            value={nft.mintAddress}
-            onClick={() =>
-              void navigator.clipboard
-                .writeText(nft.mintAddress)
-                .then(() => onAction("Mint address copied"))
-                .catch(() => onAction("Unable to copy mint address"))
+            value={mintAddress ?? "Not minted"}
+            onClick={
+              mintAddress
+                ? () =>
+                    void navigator.clipboard
+                      .writeText(mintAddress)
+                      .then(() => onAction("Mint address copied"))
+                      .catch(() => onAction("Unable to copy mint address"))
+                : undefined
             }
           />
 
@@ -403,22 +397,7 @@ export default function NFTOverviewTab({
             recentActivity.map((item, index) => (
               <div key={`${item.id}-${index}`} className="flex gap-3">
                 <div className="relative flex flex-col items-center">
-                  <div
-                    className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
-                      item.type.includes("sale") || item.type.includes("sold")
-                        ? "border-emerald-400 bg-emerald-400/10 text-emerald-400"
-                        : "border-[#233d65] bg-[#0c2142] text-cyan-300"
-                    }`}
-                  >
-                    {item.type.includes("sale") ||
-                    item.type.includes("sold") ? (
-                      <FiCheck size={16} />
-                    ) : item.type.includes("offer") ? (
-                      <FaWallet size={14} />
-                    ) : (
-                      <FiTag size={14} />
-                    )}
-                  </div>
+                  <ActivityIcon event={item} />
 
                   {index !== recentActivity.length - 1 && (
                     <div className="absolute top-8 h-[48px] w-px bg-[#233d65]" />
@@ -426,19 +405,17 @@ export default function NFTOverviewTab({
                 </div>
 
                 <div className="min-w-0 pb-1">
-                  <p className="text-xs font-medium">
-                    {formatActivityTitle(item.title)}
+                  <p className="text-xs font-medium">{item.title}</p>
+                  <p className="mt-1 break-all text-[10px] text-blue-300">
+                    {getActivityDescription(item)}
                   </p>
-                  <p className="mt-1 break-words text-[10px] text-blue-300">
-                    {shortenAddress(item.detail)}
-                  </p>
-                  {item.price !== null && item.price !== undefined && (
+                  {item.price !== null && (
                     <p className="mt-1 text-[10px] text-cyan-300">
                       {item.price} {item.currency ?? ""}
                     </p>
                   )}
                   <p className="mt-1 text-[10px] text-blue-400">
-                    {formatDate(item.date)}
+                    {formatDate(item.createdAt)}
                   </p>
                 </div>
               </div>
@@ -452,6 +429,34 @@ export default function NFTOverviewTab({
       </section>
     </div>
   );
+}
+
+function ActivityIcon({ event }: { event: NFTActivityEvent }) {
+  if (event.kind === "mint" && event.avatar) {
+    return (
+      <img
+        src={event.avatar}
+        alt=""
+        className="z-10 h-8 w-8 shrink-0 rounded-full border border-[#233d65] object-cover"
+      />
+    );
+  }
+
+  const iconClassName =
+    event.kind === "sale"
+      ? "border-emerald-400 bg-emerald-400/10 text-emerald-400"
+      : event.kind === "offer"
+        ? "border-violet-400 bg-violet-400/10 text-violet-300"
+        : "border-[#233d65] bg-[#0c2142] text-cyan-300";
+  const className = `z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${iconClassName}`;
+
+  if (event.kind === "mint") return <span className={className}><FiAward size={14} /></span>;
+  if (event.kind === "list") return <span className={className}><FiTag size={14} /></span>;
+  if (event.kind === "offer") return <span className={className}><FiMessageCircle size={14} /></span>;
+  if (event.kind === "sale") return <span className={className}><FiCheckCircle size={16} /></span>;
+  if (event.kind === "cancel") return <span className={className}><FiXCircle size={14} /></span>;
+  if (event.kind === "transfer") return <span className={className}><FiRefreshCw size={14} /></span>;
+  return <span className={className}><FiRefreshCw size={14} /></span>;
 }
 
 function ContractField({

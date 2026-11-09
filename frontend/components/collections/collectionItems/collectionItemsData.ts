@@ -1,11 +1,14 @@
 export type NFTItem = {
   id: string;
+  mintAddress?: string;
   name: string;
   collection: string;
   image: string;
-  price: number;
+  price: number | null;
   rarity: "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary";
   status: "Buy Now" | "Listed";
+  isOwner: boolean;
+  listedAt: string | null;
   listedDaysAgo: number;
   owners: string;
   verified: boolean;
@@ -27,6 +30,8 @@ export const nftItems: NFTItem[] = [
     price: 12.5,
     rarity: "Legendary",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 1,
     owners: "6.4K",
     verified: true,
@@ -46,6 +51,8 @@ export const nftItems: NFTItem[] = [
     price: 8.3,
     rarity: "Epic",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 2,
     owners: "4.2K",
     verified: true,
@@ -65,6 +72,8 @@ export const nftItems: NFTItem[] = [
     price: 6.7,
     rarity: "Rare",
     status: "Listed",
+    isOwner: false,
+    listedAt: "2026-11-05T12:00:00.000Z",
     listedDaysAgo: 3,
     owners: "3.1K",
     verified: true,
@@ -84,6 +93,8 @@ export const nftItems: NFTItem[] = [
     price: 4.2,
     rarity: "Uncommon",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 4,
     owners: "2.8K",
     verified: true,
@@ -103,6 +114,8 @@ export const nftItems: NFTItem[] = [
     price: 5.8,
     rarity: "Rare",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 5,
     owners: "3.6K",
     verified: false,
@@ -122,6 +135,8 @@ export const nftItems: NFTItem[] = [
     price: 9.4,
     rarity: "Epic",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 6,
     owners: "4.9K",
     verified: false,
@@ -141,6 +156,8 @@ export const nftItems: NFTItem[] = [
     price: 15,
     rarity: "Legendary",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 7,
     owners: "7.2K",
     verified: true,
@@ -160,6 +177,8 @@ export const nftItems: NFTItem[] = [
     price: 3.9,
     rarity: "Uncommon",
     status: "Buy Now",
+    isOwner: false,
+    listedAt: null,
     listedDaysAgo: 8,
     owners: "2.1K",
     verified: false,

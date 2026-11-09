@@ -45,77 +45,26 @@
 "use client";
 
 import type { NFTDetailsData } from "@/services/nfts";
-import { FiRepeat, FiShoppingBag, FiTag } from "react-icons/fi";
+import {
+  FiAward,
+  FiCheckCircle,
+  FiMessageCircle,
+  FiRefreshCw,
+  FiTag,
+  FiXCircle,
+} from "react-icons/fi";
+import {
+  getActivityDescription,
+  getNFTActivityEvents,
+  type NFTActivityEvent,
+} from "./nftActivity";
 
 type NFTActivityTabProps = {
   nft: NFTDetailsData;
 };
 
-type ActivityRow = {
-  id: string;
-  title: string;
-  type: string;
-  participant: string;
-  date: string;
-};
-
 export default function NFTActivityTab({ nft }: NFTActivityTabProps) {
-  const activityRows: ActivityRow[] = [
-    ...nft.activities.map((item) => ({
-      id: `activity-${item.id}`,
-      title: item.type,
-      type: item.type.toLowerCase(),
-      participant:
-        item.user?.username || item.user?.wallet || "Unknown participant",
-      date: item.createdAt,
-    })),
-    ...nft.sales.map((sale) => ({
-      id: `sale-${sale.id}`,
-      title: "Sale",
-      type: "sale",
-      participant:
-        sale.buyer?.username ||
-        sale.buyer?.wallet ||
-        sale.seller?.username ||
-        sale.seller?.wallet ||
-        "Unknown participant",
-      date: sale.createdAt,
-    })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-  const formatDate = (date: string) => {
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "Unknown date";
-    }
-
-    return parsedDate.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatParticipant = (participant: string) => {
-    if (participant.length > 24 && participant.startsWith("0")) {
-      return `${participant.slice(0, 6)}...${participant.slice(-4)}`;
-    }
-
-    return participant;
-  };
-
-  const getActivityIcon = (type: string) => {
-    if (type.includes("list")) {
-      return <FiTag aria-hidden="true" className="text-cyan-300" />;
-    }
-
-    if (type.includes("sale")) {
-      return <FiShoppingBag aria-hidden="true" className="text-emerald-300" />;
-    }
-
-    return <FiRepeat aria-hidden="true" className="text-violet-300" />;
-  };
+  const activityRows = getNFTActivityEvents(nft);
 
   return (
     <div className="p-5 md:p-7">
@@ -141,17 +90,25 @@ export default function NFTActivityTab({ nft }: NFTActivityTabProps) {
                 <tr key={item.id} className="border-t border-[#172c4c]">
                   <td className="py-4 font-medium">
                     <span className="flex items-center gap-2">
-                      {getActivityIcon(item.type)}
+                        <ActivityIcon event={item} />
                       {item.title}
                     </span>
                   </td>
 
                   <td className="py-4 text-blue-200">
-                    {formatParticipant(item.participant)}
+                    {getActivityDescription(item)}
+                    {item.price !== null && (
+                      <span className="ml-2 text-cyan-300">
+                        {item.price} {item.currency}
+                      </span>
+                    )}
                   </td>
 
                   <td className="py-4 text-blue-400">
-                    {formatDate(item.date)}
+                    {new Date(item.createdAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
                   </td>
                 </tr>
               ))}
@@ -167,4 +124,43 @@ export default function NFTActivityTab({ nft }: NFTActivityTabProps) {
       </div>
     </div>
   );
+}
+
+function ActivityIcon({ event }: { event: NFTActivityEvent }) {
+  if (event.kind === "mint" && event.avatar) {
+    return (
+      <img
+        src={event.avatar}
+        alt=""
+        className="h-5 w-5 rounded-full object-cover"
+      />
+    );
+  }
+
+  const className =
+    event.kind === "sale"
+      ? "text-emerald-300"
+      : event.kind === "offer"
+        ? "text-violet-300"
+        : "text-cyan-300";
+
+  if (event.kind === "mint") {
+    return <FiAward aria-hidden="true" className={className} />;
+  }
+  if (event.kind === "list") {
+    return <FiTag aria-hidden="true" className={className} />;
+  }
+  if (event.kind === "offer") {
+    return <FiMessageCircle aria-hidden="true" className={className} />;
+  }
+  if (event.kind === "sale") {
+    return <FiCheckCircle aria-hidden="true" className={className} />;
+  }
+  if (event.kind === "transfer") {
+    return <FiRefreshCw aria-hidden="true" className={className} />;
+  }
+  if (event.kind === "cancel") {
+    return <FiXCircle aria-hidden="true" className={className} />;
+  }
+  return <FiRefreshCw aria-hidden="true" className={className} />;
 }

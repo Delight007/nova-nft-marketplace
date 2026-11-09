@@ -11,6 +11,7 @@ export interface MintNFTInput {
   name: string;
   description: string;
   image: string;
+  collection: string;
   royalty: number;
   attributes: {
     trait_type: string;
@@ -48,6 +49,10 @@ export async function mintNFT(
     name: input.name.trim(),
     description: input.description.trim(),
     image: input.image,
+    collection: {
+      name: input.collection.trim(),
+      family: input.collection.trim(),
+    },
     attributes: input.attributes,
   };
 

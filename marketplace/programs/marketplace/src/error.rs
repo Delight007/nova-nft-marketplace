@@ -13,6 +13,12 @@ pub enum ErrorCode {
 
     #[msg("The listing is not active")]
     ListingInactive,
+
+    #[msg("This NFT already has an active listing")]
+    ListingAlreadyActive,
+
+    #[msg("The listing escrow account is not empty")]
+    EscrowNotEmpty,
     
     #[msg("The seller cannot buy their own NFT")]
     SellerCannotBuyOwnNft,

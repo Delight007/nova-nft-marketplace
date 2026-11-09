@@ -36,7 +36,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
       ============================================================ */}
       <div className="relative aspect-[1.9/1] overflow-hidden">
         <CollectionImage
-          src={collection.banner || "/images/n.png"}
+          src={collection.previewImage || collection.banner || "/images/n.png"}
           alt={collection.name}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"

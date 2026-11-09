@@ -26,7 +26,7 @@ pub struct ListNft<'info> {
     pub seller_token_account: Account<'info, TokenAccount>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = seller,
         space = 8 + Listing::INIT_SPACE,
         seeds = [
@@ -39,13 +39,14 @@ pub struct ListNft<'info> {
     pub listing: Account<'info, Listing>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = seller,
         seeds = [ESCROW_SEED, listing.key().as_ref()],
         bump,
         token::mint = mint,
         token::authority = listing,
-        token::token_program = token_program
+        token::token_program = token_program,
+        constraint = escrow_token_account.amount == 0 @ crate::error::ErrorCode::EscrowNotEmpty
     )]
     pub escrow_token_account: Account<'info, TokenAccount>,
 
@@ -55,6 +56,11 @@ pub struct ListNft<'info> {
 
 pub fn handle_list_nft(ctx: Context<ListNft>, price: u64) -> Result<()> {
     require!(price > 0, crate::error::ErrorCode::InvalidPrice);
+
+    require!(
+        !ctx.accounts.listing.active,
+        crate::error::ErrorCode::ListingAlreadyActive
+    );
 
     require!(
         ctx.accounts.mint.decimals == 0 && ctx.accounts.mint.supply == 1,

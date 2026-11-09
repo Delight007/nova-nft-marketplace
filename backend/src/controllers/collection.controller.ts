@@ -134,7 +134,9 @@ export async function getCollections(_req: Request, res: Response) {
         },
 
         nfts: {
+          orderBy: { createdAt: "desc" },
           select: {
+            image: true,
             listings: {
               where: {
                 status: "ACTIVE",
@@ -183,6 +185,7 @@ export async function getCollections(_req: Request, res: Response) {
         creator,
         creatorAvatar: collection.creator.avatar,
         banner: collection.banner ?? collection.image,
+        previewImage: collection.nfts[0]?.image ?? null,
         items: collection._count.nfts,
         floorPrice,
         volume: totalVolume,

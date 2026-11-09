@@ -2,7 +2,7 @@ import api from "@/lib/axios";
 
 export type NFTDetailsData = {
   id: string;
-  mintAddress: string;
+  mintAddress: string | null;
   name: string;
   description: string | null;
   image: string;
@@ -31,6 +31,7 @@ export type NFTDetailsData = {
     slug: string;
     image: string | null;
     banner: string | null;
+    previewImage: string | null;
     verified: boolean;
   } | null;
 
@@ -51,6 +52,7 @@ export type NFTDetailsData = {
     id: string;
     price: number;
     currency: string;
+    transactionSignature: string;
     createdAt: string;
     buyer: {
       wallet: string;

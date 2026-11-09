@@ -196,6 +196,8 @@ export default function NFTSidebar({
 
   const creator = nft.creator;
   const collection = nft.collection;
+  const collectionImage =
+    collection?.previewImage || collection?.banner || collection?.image;
 
   const creatorName =
     creator.username ||
@@ -257,9 +259,9 @@ export default function NFTSidebar({
         <div className="mt-4 space-y-4">
           <DetailRow
             icon={
-              collection?.image ? (
+              collectionImage ? (
                 <img
-                  src={collection.image}
+                  src={collectionImage}
                   alt=""
                   className="h-full w-full object-cover"
                 />
