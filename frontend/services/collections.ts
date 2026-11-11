@@ -84,3 +84,45 @@ export async function getCollectionBySlug(
 
   return response.data.data;
 }
+
+export type CollectionActivityUser = {
+  username: string | null;
+  wallet: string;
+  avatar: string | null;
+};
+
+export type CollectionActivityEvent = {
+  id: string;
+  type:
+    | "MINTED"
+    | "LISTED"
+    | "DELISTED"
+    | "SALE"
+    | "OFFER_MADE"
+    | "OFFER_ACCEPTED"
+    | "OFFER_CANCELLED"
+    | "TRANSFER";
+  nft: {
+    id: string;
+    name: string;
+    image: string;
+    mintAddress: string | null;
+  };
+  user: CollectionActivityUser | null;
+  buyer: CollectionActivityUser | null;
+  seller: CollectionActivityUser | null;
+  price: number | null;
+  currency: string | null;
+  transactionSignature: string | null;
+  createdAt: string;
+};
+
+export async function getCollectionActivity(
+  slug: string,
+): Promise<CollectionActivityEvent[]> {
+  const response = await api.get<ApiResponse<CollectionActivityEvent[]>>(
+    `/api/collections/${encodeURIComponent(slug)}/activity`,
+  );
+
+  return response.data.data;
+}

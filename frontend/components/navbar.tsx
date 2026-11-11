@@ -7,7 +7,7 @@ import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { FiSearch, FiSun } from "react-icons/fi";
+import { FiSearch, FiUser } from "react-icons/fi";
 import {
   CURRENT_USER_QUERY_KEY,
   useCurrentUser,
@@ -148,14 +148,14 @@ export default function Navbar() {
             </span>
           </div>
 
-          {/* Theme */}
-          <button
-            type="button"
+          {/* Profile */}
+          <Link
+            href="/profile"
             className="text-slate-400 transition hover:text-white"
-            aria-label="Toggle theme"
+            aria-label="Profile"
           >
-            <FiSun className="text-xl" />
-          </button>
+            <FiUser className="text-xl" />
+          </Link>
 
           {/* Wallet */}
           {!connected ? (

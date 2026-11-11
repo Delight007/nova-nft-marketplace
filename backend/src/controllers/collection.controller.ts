@@ -1,108 +1,3 @@
-// import type { Request, Response } from "express";
-// import { prisma } from "../lib/prisma.js";
-
-// export async function getCollections(_req: Request, res: Response) {
-//   try {
-//     const collections = await prisma.collection.findMany({
-//       orderBy: {
-//         createdAt: "desc",
-//       },
-//       select: {
-//         id: true,
-//         name: true,
-//         slug: true,
-//         image: true,
-//         banner: true,
-//         verified: true,
-//         createdAt: true,
-
-//         creator: {
-//           select: {
-//             username: true,
-//             wallet: true,
-//             avatar: true,
-//           },
-//         },
-
-//         _count: {
-//           select: {
-//             nfts: true,
-//             listings: true,
-//           },
-//         },
-
-//         nfts: {
-//           select: {
-//             listings: {
-//               where: {
-//                 status: "ACTIVE",
-//               },
-//               select: {
-//                 price: true,
-//               },
-//             },
-//             sales: {
-//               select: {
-//                 price: true,
-//               },
-//             },
-//           },
-//         },
-//       },
-//     });
-
-//     const data = collections.map((collection) => {
-//       const activeListings = collection.nfts.flatMap((nft) => nft.listings);
-
-//       const sales = collection.nfts.flatMap((nft) => nft.sales);
-
-//       const floorPrice =
-//         activeListings.length > 0
-//           ? Math.min(...activeListings.map((listing) => Number(listing.price)))
-//           : 0;
-
-//       const totalVolume = sales.reduce(
-//         (total, sale) => total + Number(sale.price),
-//         0,
-//       );
-
-//       const isNew =
-//         Date.now() - collection.createdAt.getTime() <= 7 * 24 * 60 * 60 * 1000;
-
-//       const creator =
-//         collection.creator.username ??
-//         `${collection.creator.wallet.slice(0, 4)}...${collection.creator.wallet.slice(-4)}`;
-
-//       return {
-//         id: collection.id,
-//         name: collection.name,
-//         slug: collection.slug,
-//         creator,
-//         creatorAvatar: collection.creator.avatar,
-//         banner: collection.banner ?? collection.image,
-//         items: collection._count.nfts,
-//         floorPrice,
-//         volume: totalVolume,
-//         verified: collection.verified,
-//         isNew,
-//         activeTrading: activeListings.length > 0,
-//       };
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       data,
-//     });
-//   } catch (error) {
-//     console.error("Get collections error:", error);
-
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to fetch collections",
-//     });
-//   }
-// }
-
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 
@@ -411,6 +306,157 @@ export async function getCollectionBySlug(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: "Failed to fetch collection details",
+    });
+  }
+}
+
+export async function getCollectionActivity(req: Request, res: Response) {
+  try {
+    const slug = Array.isArray(req.params.slug)
+      ? req.params.slug[0]
+      : req.params.slug;
+
+    if (!slug) {
+      res.status(400).json({
+        success: false,
+        message: "Collection slug is required",
+      });
+      return;
+    }
+
+    const collection = await prisma.collection.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        nfts: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            mintAddress: true,
+
+            activities: {
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                type: true,
+                price: true,
+                currency: true,
+                transactionSignature: true,
+                createdAt: true,
+                user: {
+                  select: {
+                    username: true,
+                    wallet: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+
+            sales: {
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                price: true,
+                currency: true,
+                transactionSignature: true,
+                createdAt: true,
+                buyer: {
+                  select: {
+                    username: true,
+                    wallet: true,
+                    avatar: true,
+                  },
+                },
+                seller: {
+                  select: {
+                    username: true,
+                    wallet: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!collection) {
+      res.status(404).json({
+        success: false,
+        message: "Collection not found",
+      });
+      return;
+    }
+
+    const events = collection.nfts.flatMap((nft) => {
+      const saleSignatures = new Set(
+        nft.sales.map((sale) => sale.transactionSignature),
+      );
+
+      const activityEvents = nft.activities
+        .filter(
+          (activity) =>
+            activity.type !== "SALE" ||
+            !activity.transactionSignature ||
+            !saleSignatures.has(activity.transactionSignature),
+        )
+        .map((activity) => ({
+          id: `activity-${activity.id}`,
+          type: activity.type,
+          nft: {
+            id: nft.id,
+            name: nft.name,
+            image: nft.image,
+            mintAddress: nft.mintAddress,
+          },
+          user: activity.user,
+          buyer: null,
+          seller: null,
+          price: activity.price !== null ? Number(activity.price) : null,
+          currency: activity.currency,
+          transactionSignature: activity.transactionSignature,
+          createdAt: activity.createdAt,
+        }));
+
+      const saleEvents = nft.sales.map((sale) => ({
+        id: `sale-${sale.id}`,
+        type: "SALE" as const,
+        nft: {
+          id: nft.id,
+          name: nft.name,
+          image: nft.image,
+          mintAddress: nft.mintAddress,
+        },
+        user: null,
+        buyer: sale.buyer,
+        seller: sale.seller,
+        price: Number(sale.price),
+        currency: sale.currency,
+        transactionSignature: sale.transactionSignature,
+        createdAt: sale.createdAt,
+      }));
+
+      return [...activityEvents, ...saleEvents];
+    });
+
+    events.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    res.status(200).json({
+      success: true,
+      data: events,
+    });
+  } catch (error) {
+    console.error("Get collection activity error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch collection activity",
     });
   }
 }

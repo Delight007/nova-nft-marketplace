@@ -6,8 +6,9 @@ import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { FiActivity, FiTag } from "react-icons/fi";
+import { FiTag } from "react-icons/fi";
 import BuyNFTModal from "./collectionItems/BuyNFTModal";
+import CollectionActivityFeed from "./collectionItems/CollectionActivityFeed";
 import CollectionItemsBars from "./collectionItems/CollectionItemsBars";
 import CollectionItemsFilters from "./collectionItems/CollectionItemsFilters";
 import CollectionItemsGrid from "./collectionItems/CollectionItemsGrid";
@@ -387,24 +388,19 @@ export default function CollectionItems({
               )}
             </div>
           </div>
+        ) : activeTab === "Activity" ? (
+          <CollectionActivityFeed slug={slug} />
         ) : (
           <div className="flex min-h-80 flex-col items-center justify-center text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-purple-500/20 bg-purple-500/10 text-purple-300">
-              {activeTab === "Activity" ? (
-                <FiActivity size={22} />
-              ) : (
-                <FiTag size={22} />
-              )}
+              <FiTag size={22} />
             </div>
             <h3 className="text-base font-semibold text-white">
-              {activeTab === "Activity"
-                ? "Collection Activity"
-                : "Collection Offers"}
+              Collection Offers
             </h3>
             <p className="mt-2 max-w-sm text-xs leading-5 text-slate-500">
-              {activeTab === "Activity"
-                ? "NFT sales, listings, transfers, and other on-chain events will appear here once activity data is connected."
-                : "Offers made on NFTs in this collection will appear here once offer data is connected."}
+              Offers made on NFTs in this collection will appear here once
+              offer data is connected.
             </p>
           </div>
         )}
