@@ -236,7 +236,15 @@ function shortenWallet(wallet: string) {
   return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
 }
 
-export default function ProfileHero() {
+type ProfileHeroProps = {
+  forceEditOpen?: boolean;
+  onEditClose?: () => void;
+};
+
+export default function ProfileHero({
+  forceEditOpen = false,
+  onEditClose,
+}: ProfileHeroProps) {
   const { data: profile, isLoading, isError } = useMyProfile();
   const [editOpen, setEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -536,7 +544,14 @@ export default function ProfileHero() {
         </div>
       </section>
 
-      {editOpen && <ProfileEditModal onClose={() => setEditOpen(false)} />}
+      {(editOpen || forceEditOpen) && (
+        <ProfileEditModal
+          onClose={() => {
+            setEditOpen(false);
+            onEditClose?.();
+          }}
+        />
+      )}
     </>
   );
 }

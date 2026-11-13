@@ -20,7 +20,10 @@ import {
 
 import { useBuyNFT } from "@/hooks/use-buy-nft";
 import { useBuyNFTOnChain } from "@/hooks/use-buy-nft-on-chain";
-import { CURRENT_USER_QUERY_KEY } from "@/hooks/use-current-user";
+import {
+  CURRENT_USER_QUERY_KEY,
+  useCurrentUser,
+} from "@/hooks/use-current-user";
 import { authenticateWalletSession } from "@/lib/auth";
 import type { NFTItem } from "./collectionItemsData";
 
@@ -49,11 +52,17 @@ export default function BuyNFTModal({
 
   const [transactionWallet, setTransactionWallet] = useState("");
 
-  const { publicKey, signMessage } = useWallet();
+  const { connected, publicKey, signMessage } = useWallet();
 
   const buyerWallet = publicKey?.toBase58() ?? "";
 
   const queryClient = useQueryClient();
+  const {
+    data: currentUser,
+    isPending: isCheckingWalletSession,
+  } = useCurrentUser(connected && Boolean(buyerWallet));
+  const isWalletVerified =
+    connected && currentUser?.wallet === buyerWallet;
   const { buyNFT } = useBuyNFTOnChain();
   const completePurchase = useBuyNFT();
 
@@ -72,7 +81,7 @@ export default function BuyNFTModal({
   }, [nft.id, buyerWallet]);
 
   const handleAuthenticate = async () => {
-    if (!publicKey || !signMessage) {
+    if (!connected || !publicKey || !signMessage) {
       setError(
         "Connect a wallet that supports message signing to authenticate and save this purchase.",
       );
@@ -166,8 +175,14 @@ export default function BuyNFTModal({
     setAuthenticationRequired(false);
     setWalletAuthenticated(false);
 
-    if (!buyerWallet) {
+    if (!connected || !buyerWallet) {
       setError("Connect your wallet before continuing.");
+      return;
+    }
+
+    if (!isWalletVerified) {
+      setAuthenticationRequired(true);
+      setError("Verify your wallet before continuing with a purchase.");
       return;
     }
 
@@ -356,17 +371,21 @@ export default function BuyNFTModal({
             </div>
           )}
 
-          {authenticationRequired && transactionSignature && (
-            <button
-              type="button"
-              onClick={handleAuthenticate}
-              disabled={isAuthenticating || isBuying}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isAuthenticating && <FaSpinner className="animate-spin" />}
-              {isAuthenticating ? "Verifying Wallet..." : "Verify Wallet"}
-            </button>
-          )}
+          {connected &&
+            (authenticationRequired ||
+              (buyerWallet &&
+                !isCheckingWalletSession &&
+                !isWalletVerified)) && (
+              <button
+                type="button"
+                onClick={handleAuthenticate}
+                disabled={isAuthenticating || isBuying}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isAuthenticating && <FaSpinner className="animate-spin" />}
+                {isAuthenticating ? "Verifying Wallet..." : "Verify Wallet"}
+              </button>
+            )}
 
           {walletAuthenticated && transactionSignature && (
             <p className="text-center text-xs text-emerald-400">
@@ -398,6 +417,10 @@ export default function BuyNFTModal({
               disabled={
                 isBuying ||
                 isAuthenticating ||
+                isCheckingWalletSession ||
+                !connected ||
+                !buyerWallet ||
+                !isWalletVerified ||
                 (!transactionSignature && !nft.mintAddress)
               }
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-400 px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"

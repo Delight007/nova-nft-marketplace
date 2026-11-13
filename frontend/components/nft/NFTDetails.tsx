@@ -120,12 +120,14 @@
 "use client";
 
 import { useNFTDetails } from "@/hooks/use-nft-details";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { useState } from "react";
 import { FiArrowLeft, FiBell } from "react-icons/fi";
 import BuyNFTModal from "@/components/collections/collectionItems/BuyNFTModal";
+import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
 import CancelListingModal from "@/components/profile/cancelListingModal";
 import ListNFTModal from "@/components/profile/listNFTModal";
 import type { CollectedNFT } from "@/services/user";
@@ -141,7 +143,10 @@ type NFTDetailsProps = {
 
 export default function NFTDetails({ id }: NFTDetailsProps) {
   const { data: nft, isPending, isError, error } = useNFTDetails(id);
-  const { publicKey } = useWallet();
+  const { connected, publicKey } = useWallet();
+  const { data: currentUser } = useCurrentUser(
+    connected && Boolean(publicKey),
+  );
   const queryClient = useQueryClient();
 
   const [favorite, setFavorite] = useState(false);
@@ -149,10 +154,13 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState("");
   const [buyOpen, setBuyOpen] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [cancelListingOpen, setCancelListingOpen] = useState(false);
 
   const connectedWallet = publicKey?.toBase58();
+  const isWalletVerified =
+    connected && currentUser?.wallet === connectedWallet;
   const isOwner =
     Boolean(nft && connectedWallet) &&
     nft?.owner.wallet.toLowerCase() === connectedWallet?.toLowerCase();
@@ -281,7 +289,13 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
             onShowMore={() => setShowMore(true)}
             onCloseMore={() => setShowMore(false)}
             onAction={setNotice}
-            onBuy={() => setBuyOpen(true)}
+            onBuy={() => {
+              if (isWalletVerified) {
+                setBuyOpen(true);
+              } else {
+                setVerificationModalOpen(true);
+              }
+            }}
             onList={() => setListOpen(true)}
             onCancelListing={() => setCancelListingOpen(true)}
           />
@@ -330,6 +344,14 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
           }}
         />
       )}
+      <WalletVerificationModal
+        isOpen={verificationModalOpen}
+        onClose={() => setVerificationModalOpen(false)}
+        onVerified={() => {
+          setVerificationModalOpen(false);
+          setBuyOpen(true);
+        }}
+      />
 
       {listingNFT && listOpen && (
         <ListNFTModal

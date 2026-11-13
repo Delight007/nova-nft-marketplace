@@ -13,8 +13,7 @@ const tabs: ActivityTab[] = [
   "All",
   "Sale",
   "Listing",
-  "Offer",
-  "Transfer",
+  "Delisting",
   "Mint",
 ];
 

@@ -9,10 +9,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const MY_PROFILE_QUERY_KEY = ["myProfile"] as const;
 
-export function useMyProfile() {
+export function useMyProfile(enabled = true) {
   return useQuery({
     queryKey: MY_PROFILE_QUERY_KEY,
     queryFn: getMyProfile,
+    enabled,
     retry: false,
     staleTime: 60_000,
   });

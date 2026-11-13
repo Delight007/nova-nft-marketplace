@@ -9,22 +9,40 @@ import {
 } from "react-icons/fi";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import { MdOutlineCategory } from "react-icons/md";
-import type { ActivityFilterState, ActivityType } from "./activity";
+import type {
+  ActivityFilterState,
+  ActivityType,
+} from "./activity";
+import type {
+  MarketplaceActivitySummary,
+} from "@/services/activity";
 
 type ActivityFiltersProps = {
   onFilterChange?: (filters: ActivityFilterState) => void;
+  collections: { id: string; name: string }[];
+  summary?: MarketplaceActivitySummary;
+  isLoading?: boolean;
 };
 
 const eventTypes: ActivityType[] = [
   "Sale",
   "Listing",
-  "Offer",
-  "Transfer",
+  "Delisting",
   "Mint",
 ];
 
+const eventLabels: Record<ActivityType, string> = {
+  Sale: "Sales",
+  Listing: "Listings",
+  Delisting: "Delistings",
+  Mint: "Mints",
+};
+
 export default function ActivityFilters({
   onFilterChange,
+  collections,
+  summary,
+  isLoading = false,
 }: ActivityFiltersProps) {
   const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>([]);
   const [collection, setCollection] = useState("All Collections");
@@ -70,7 +88,6 @@ export default function ActivityFilters({
 
   return (
     <aside className="w-full rounded-2xl border border-[#172f68] bg-[#030d24]/90 p-3.5 lg:w-[250px] lg:shrink-0">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-[#172653] pb-4">
         <div className="flex items-center gap-2">
           <HiOutlineAdjustmentsHorizontal className="text-lg text-[#a978ff]" />
@@ -86,7 +103,6 @@ export default function ActivityFilters({
         </button>
       </div>
 
-      {/* Event type */}
       <div className="border-b border-[#172653] py-5">
         <div className="mb-4 flex items-center gap-2">
           <FiFilter className="text-sm text-[#8b7cff]" />
@@ -94,7 +110,7 @@ export default function ActivityFilters({
         </div>
 
         <div className="space-y-3">
-          {eventTypes.map((type, index) => {
+          {eventTypes.map((type) => {
             const checked = selectedTypes.includes(type);
 
             return (
@@ -124,12 +140,19 @@ export default function ActivityFilters({
                       checked ? "text-[#b9c9ff]" : "text-[#7894c8]"
                     }`}
                   >
-                    {type}s
+                    {eventLabels[type]}
                   </span>
                 </div>
 
                 <span className="text-xs text-[#7190c7]">
-                  {[342, 128, 76, 54, 18][index]}
+                  {isLoading ? (
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-3 w-5 animate-pulse rounded bg-[#173665] align-middle"
+                    />
+                  ) : (
+                    summary?.[type].count ?? 0
+                  )}
                 </span>
               </button>
             );
@@ -137,7 +160,6 @@ export default function ActivityFilters({
         </div>
       </div>
 
-      {/* Collection */}
       <div className="border-b border-[#172653] py-5">
         <div className="mb-3 flex items-center gap-2">
           <MdOutlineCategory className="text-sm text-[#8b7cff]" />
@@ -153,19 +175,18 @@ export default function ActivityFilters({
             }}
             className="h-10 w-full appearance-none rounded-lg border border-[#24467f] bg-[#061531] px-3 pr-9 text-xs text-[#91a9d8] outline-none transition focus:border-[#674dff]"
           >
-            <option>All Collections</option>
-            <option>Neon Realms</option>
-            <option>Ape Society</option>
-            <option>The Forgotten</option>
-            <option>Sky Islands</option>
-            <option>Aurora</option>
+            <option value="All Collections">All Collections</option>
+            {collections.map((item) => (
+              <option key={item.id} value={item.name}>
+                {item.name}
+              </option>
+            ))}
           </select>
 
           <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#7692c8]" />
         </div>
       </div>
 
-      {/* Wallet */}
       <div className="border-b border-[#172653] py-5">
         <div className="mb-3 flex items-center gap-2">
           <FiSearch className="text-sm text-[#8b7cff]" />
@@ -179,7 +200,11 @@ export default function ActivityFilters({
             value={walletAddress}
             onChange={(event) => {
               setWalletAddress(event.target.value);
-              updateFilters(selectedTypes, collection, event.target.value);
+              updateFilters(
+                selectedTypes,
+                collection,
+                event.target.value,
+              );
             }}
             placeholder="Search wallet address..."
             className="h-10 w-full rounded-lg border border-[#24467f] bg-[#061531] px-3 pr-9 text-xs text-white outline-none placeholder:text-[#5472aa] focus:border-[#674dff]"
@@ -189,7 +214,6 @@ export default function ActivityFilters({
         </div>
       </div>
 
-      {/* Date range */}
       <div className="py-5">
         <div className="mb-3 flex items-center gap-2">
           <FiCalendar className="text-sm text-[#8b7cff]" />
@@ -220,14 +244,6 @@ export default function ActivityFilters({
           <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#7692c8]" />
         </div>
       </div>
-
-      <button
-        type="button"
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#912cff] via-[#6b45ff] to-[#08d9ed] text-xs font-semibold text-white shadow-[0_0_24px_rgba(105,64,255,0.2)] transition hover:scale-[1.01]"
-      >
-        <HiOutlineAdjustmentsHorizontal className="text-base" />
-        Apply Filters
-      </button>
     </aside>
   );
 }

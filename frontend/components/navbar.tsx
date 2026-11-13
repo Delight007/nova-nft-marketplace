@@ -14,6 +14,7 @@ import {
 } from "@/hooks/use-current-user";
 import { api } from "@/lib/axios";
 import { authenticateWalletSession } from "@/lib/auth";
+import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
 
 const navLinks = [
   { name: "Explore", href: "/" },
@@ -30,6 +31,7 @@ export default function Navbar() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [verifyOnConnect, setVerifyOnConnect] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
   const { data: currentUser, isPending: isCheckingSession } = useCurrentUser(
@@ -148,20 +150,24 @@ export default function Navbar() {
             </span>
           </div>
 
-          {/* Profile */}
-          <Link
-            href="/profile"
-            className="text-slate-400 transition hover:text-white"
-            aria-label="Profile"
-          >
-            <FiUser className="text-xl" />
-          </Link>
+          {connected && (
+            <Link
+              href="/profile"
+              className="text-slate-400 transition hover:text-white"
+              aria-label="Profile"
+            >
+              <FiUser className="text-xl" />
+            </Link>
+          )}
 
           {/* Wallet */}
           {!connected ? (
             <button
               type="button"
-              onClick={() => setVisible(true)}
+              onClick={() => {
+                setVerifyOnConnect(true);
+                setVisible(true);
+              }}
               className="cursor-pointer rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
             >
               Connect Wallet
@@ -231,6 +237,15 @@ export default function Navbar() {
           )}
         </div>
       </nav>
+      <WalletVerificationModal
+        isOpen={
+          verifyOnConnect &&
+          connected &&
+          currentUser?.wallet !== walletAddress
+        }
+        onClose={() => setVerifyOnConnect(false)}
+        onVerified={() => setVerifyOnConnect(false)}
+      />
     </section>
   );
 }

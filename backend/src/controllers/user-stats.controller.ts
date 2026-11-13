@@ -210,7 +210,9 @@ export async function getMyTopCollections(req: Request, res: Response) {
           select: { nfts: true },
         },
         nfts: {
+          orderBy: { createdAt: "asc" },
           select: {
+            image: true,
             sales: {
               where: { currency: "SOL" },
               select: { price: true },
@@ -238,7 +240,7 @@ export async function getMyTopCollections(req: Request, res: Response) {
           id: collection.id,
           name: collection.name,
           slug: collection.slug,
-          image: collection.image,
+          image: collection.image ?? collection.nfts[0]?.image ?? null,
           verified: collection.verified,
           itemCount: collection._count.nfts,
           volume: Number(volume.toFixed(9)),

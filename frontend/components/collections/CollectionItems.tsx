@@ -2,6 +2,7 @@
 
 import { useCollectionDetails } from "@/hooks/use-collection-details";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import CollectionActivityFeed from "./collectionItems/CollectionActivityFeed";
 import CollectionItemsBars from "./collectionItems/CollectionItemsBars";
 import CollectionItemsFilters from "./collectionItems/CollectionItemsFilters";
 import CollectionItemsGrid from "./collectionItems/CollectionItemsGrid";
+import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
 import type {
   CollectionItemsTab,
   NFTItem,
@@ -103,8 +105,13 @@ export default function CollectionItems({
     error,
   } = useCollectionDetails(slug);
 
-  const { publicKey } = useWallet();
+  const { connected, publicKey } = useWallet();
   const connectedWallet = publicKey?.toBase58() ?? null;
+  const { data: currentUser } = useCurrentUser(
+    connected && Boolean(connectedWallet),
+  );
+  const isWalletVerified =
+    connected && currentUser?.wallet === connectedWallet;
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<CollectionItemsTab>("Items");
@@ -129,6 +136,8 @@ export default function CollectionItems({
 
   const [selectedNFTForPurchase, setSelectedNFTForPurchase] =
     useState<NFTItem | null>(null);
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
+  const [verificationModalOpen, setVerificationModalOpen] = useState(false);
 
   const handleOpenNFT = (item: NFTItem) => {
     if (onOpenNFT) {
@@ -376,10 +385,13 @@ export default function CollectionItems({
                   }
                   onClearFilters={clearFilters}
                   onBuy={(item) => {
-                    if (onBuy) {
+                    setSelectedNFTForPurchase(item);
+                    if (!isWalletVerified) {
+                      setVerificationModalOpen(true);
+                    } else if (onBuy) {
                       onBuy(item);
                     } else {
-                      setSelectedNFTForPurchase(item);
+                      setPurchaseModalOpen(true);
                     }
                   }}
                   onListForSale={onListForSale}
@@ -406,14 +418,36 @@ export default function CollectionItems({
         )}
 
         <CollectionItemsFilters variant="mobile" {...filterProps} />
-        {selectedNFTForPurchase && (
+        {selectedNFTForPurchase && purchaseModalOpen && (
           <BuyNFTModal
             nft={selectedNFTForPurchase}
             collectionSlug={slug}
-            onClose={() => setSelectedNFTForPurchase(null)}
-            onSuccess={() => setSelectedNFTForPurchase(null)}
+            onClose={() => {
+              setPurchaseModalOpen(false);
+              setSelectedNFTForPurchase(null);
+            }}
+            onSuccess={() => {
+              setPurchaseModalOpen(false);
+              setSelectedNFTForPurchase(null);
+            }}
           />
         )}
+        <WalletVerificationModal
+          isOpen={verificationModalOpen}
+          onClose={() => {
+            setVerificationModalOpen(false);
+            setSelectedNFTForPurchase(null);
+          }}
+          onVerified={() => {
+            setVerificationModalOpen(false);
+            if (onBuy && selectedNFTForPurchase) {
+              onBuy(selectedNFTForPurchase);
+              setSelectedNFTForPurchase(null);
+            } else {
+              setPurchaseModalOpen(true);
+            }
+          }}
+        />
       </div>
     </section>
   );
