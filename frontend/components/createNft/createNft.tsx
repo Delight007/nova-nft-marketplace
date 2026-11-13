@@ -1,12 +1,16 @@
 "use client";
 
 import { useCreateNFT, useUpdateNFTMint } from "@/hooks/use-create-nft";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { uploadNFTArtworkToCloudinary } from "@/lib/nftCloudinary";
 import { mintNFT } from "@/lib/solana/mint-nft";
 import { createWalletUmi } from "@/lib/solana/umi";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
+import ProfileEditModal from "@/components/profile/profileEdithModal";
 import CreateNftDetails from "./createNftDetails";
 import NftPreview from "./createNftReview";
 import CreateSteps from "./createSteps";
@@ -17,12 +21,48 @@ export interface Trait {
   value: string;
 }
 
+const subscribeToHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
+function CreatePageLoadingState() {
+  return (
+    <section
+      className="container flex min-h-[70vh] items-center justify-center bg-[#020817] text-sm text-slate-400"
+      role="status"
+    >
+      Loading...
+    </section>
+  );
+}
+
 export default function CreatePage() {
-  const { data: profile } = useMyProfile();
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
+  const router = useRouter();
+  const { connected, publicKey, wallet } = useWallet();
+  const walletAddress = publicKey?.toBase58();
+  const { data: currentUser } = useCurrentUser(
+    connected && Boolean(walletAddress),
+  );
+  const isVerified =
+    connected &&
+    Boolean(walletAddress) &&
+    currentUser?.wallet === walletAddress;
+  const {
+    data: profile,
+    isPending: isProfilePending,
+    isError: isProfileError,
+    refetch: refetchProfile,
+  } = useMyProfile(isVerified);
   const createNFTMutation = useCreateNFT();
-  const { connected, wallet } = useWallet();
 
   const updateNFTMintMutation = useUpdateNFTMint();
+  const [setupPromptOpen, setSetupPromptOpen] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -62,6 +102,89 @@ export default function CreatePage() {
       }
     };
   }, [image]);
+
+  if (!isHydrated) {
+    return <CreatePageLoadingState />;
+  }
+
+  if (!isVerified) {
+    return (
+      <section className="container flex min-h-[70vh] items-center justify-center bg-[#020817] px-5 text-white">
+        <p className="text-sm text-slate-400">
+          Connect and verify your wallet to create an NFT.
+        </p>
+        <WalletVerificationModal
+          isOpen
+          onClose={() => router.push("/")}
+          onVerified={() => router.refresh()}
+        />
+      </section>
+    );
+  }
+
+  if (isProfilePending) {
+    return <CreatePageLoadingState />;
+  }
+
+  if (isProfileError) {
+    return (
+      <section className="container flex min-h-[70vh] flex-col items-center justify-center bg-[#020817] px-5 text-center text-white">
+        <p className="text-sm text-red-300">Unable to load your profile.</p>
+        <button
+          type="button"
+          onClick={() => void refetchProfile()}
+          className="mt-4 rounded-lg border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/5"
+        >
+          Try again
+        </button>
+      </section>
+    );
+  }
+
+  if (!profile?.username?.trim()) {
+    return (
+      <section className="container min-h-screen bg-[#020817] text-white">
+        {setupPromptOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#01040c]/85 p-4 backdrop-blur-md">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="create-profile-setup-title"
+              className="w-full max-w-md rounded-2xl border border-cyan-400/20 bg-[#050b18] p-6 shadow-[0_0_80px_rgba(34,211,238,0.12)]"
+            >
+              <h2
+                id="create-profile-setup-title"
+                className="text-xl font-semibold text-white"
+              >
+                Set up your profile
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Choose a username before creating an NFT.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSetupPromptOpen(false);
+                  setEditOpen(true);
+                }}
+                className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-400 px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+              >
+                Edit profile
+              </button>
+            </div>
+          </div>
+        )}
+        {editOpen && (
+          <ProfileEditModal
+            onClose={() => {
+              setEditOpen(false);
+              setSetupPromptOpen(true);
+            }}
+          />
+        )}
+      </section>
+    );
+  }
 
   const handleImageChange = (file: File) => {
     setImageFile(file);
