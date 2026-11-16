@@ -6,16 +6,15 @@ import FeaturedNFTSlider from "./featuredNFTSlider";
 
 export default function Hero() {
   return (
-    <section className="container font-sans lg:py-15 py-10 relative overflow-hidden border-b border-white/10">
+    <section className="container relative overflow-hidden border-b border-white/10 py-10 font-sans lg:py-15">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-32 -top-36 h-[440px] w-[560px] rounded-full bg-[radial-gradient(ellipse,rgba(37,99,235,0.2)_0%,rgba(37,99,235,0.09)_38%,transparent_72%)] blur-2xl"
       />
-      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="grid min-h-[420px] grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_460px] xl:grid-cols-[1fr_500px]">
-          {" "}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
+        <div className="grid min-h-0 grid-cols-1 items-center gap-8 lg:min-h-[420px] lg:gap-10 lg:grid-cols-[1fr_460px] xl:grid-cols-[1fr_500px]">
           {/* Left */}
-          <div className="relative flex flex-col justify-center">
+          <div className="relative flex flex-col justify-center motion-safe:animate-[nova-fade-up_450ms_ease-out_both]">
             {/* Background glow */}
             <div className="pointer-events-none absolute -left-32 top-1/4 h-[450px] w-[450px] rounded-full bg-blue-700/25 blur-[130px]" />
 
@@ -27,7 +26,7 @@ export default function Hero() {
               </div>
 
               {/* Heading */}
-              <h1 className="max-w-[650px] text-5xl font-bold leading-[1.05] tracking-tight text-white xl:text-6xl">
+              <h1 className="max-w-[650px] text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl xl:text-6xl">
                 Discover, collect &
                 <br />
                 trade on{" "}
@@ -43,10 +42,10 @@ export default function Hero() {
               </p>
 
               {/* Buttons */}
-              <div className="mt-7 flex items-center gap-4">
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                 <Link
                   href="/collections"
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto sm:px-6"
                 >
                   Explore Collections
                   <FiArrowRight />
@@ -54,7 +53,7 @@ export default function Hero() {
 
                 <Link
                   href="/create"
-                  className="inline-flex items-center gap-2 rounded-full border border-cyan-400/60 px-6 py-3 text-sm font-medium text-white transition hover:bg-cyan-400/10"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-cyan-400/60 px-5 py-3 text-sm font-medium text-white transition hover:bg-cyan-400/10 sm:w-auto sm:px-6"
                 >
                   <FiBox />
                   Create Your NFT
@@ -62,7 +61,7 @@ export default function Hero() {
               </div>
 
               {/* Features */}
-              <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
+              <div className="mt-8 flex flex-wrap gap-x-5 gap-y-4 sm:gap-x-8">
                 <Feature icon={<FiZap />} text="Fast & Low Fees" />
 
                 <Feature icon={<FiShield />} text="Secure & Decentralized" />
@@ -74,7 +73,9 @@ export default function Hero() {
             </div>
           </div>
           {/* Right - Featured Collection */}
-          <FeaturedNFTSlider />
+          <div className="motion-safe:animate-[nova-fade-up_550ms_ease-out_both]">
+            <FeaturedNFTSlider />
+          </div>
         </div>
       </div>
     </section>

@@ -7,7 +7,7 @@ import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { FiSearch, FiUser } from "react-icons/fi";
+import { FiMenu, FiSearch, FiUser, FiX } from "react-icons/fi";
 import {
   CURRENT_USER_QUERY_KEY,
   useCurrentUser,
@@ -18,7 +18,7 @@ import WalletVerificationModal from "@/components/wallet/walletVerificationModal
 import { useNotify } from "@/components/providers/notification-provider";
 
 const navLinks = [
-  { name: "Explore", href: "/" },
+  { name: "Explore", href: "/explore" },
   { name: "Collections", href: "/collections" },
   { name: "Activity", href: "/activity" },
   { name: "Create", href: "/create" },
@@ -31,6 +31,7 @@ export default function Navbar() {
   const notify = useNotify();
 
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [verifyOnConnect, setVerifyOnConnect] = useState(false);
 
@@ -106,12 +107,12 @@ export default function Navbar() {
   }
 
   return (
-    <section className="container border-b border-white/10 bg-[#030712]">
-      <nav className="z-10 mx-auto flex h-14 max-w-7xl items-center px-4 lg:px-10">
+    <section className="container relative z-50 border-b border-white/10 bg-[#030712]">
+      <nav className="mx-auto flex h-14 max-w-7xl items-center px-3 sm:px-4 lg:px-10">
         {/* Logo */}
         <Link
           href="/"
-          className="relative mr-14 flex h-7 w-[140px] shrink-0 items-center overflow-hidden"
+          className="relative mr-3 flex h-7 w-[112px] shrink-0 items-center overflow-hidden sm:mr-6 sm:w-[140px] xl:mr-14"
         >
           <Image
             src="/images/logo.png"
@@ -123,7 +124,7 @@ export default function Navbar() {
         </Link>
 
         {/* Navigation */}
-        <div className="flex h-full items-center gap-6">
+        <div className="hidden h-full items-center gap-6 lg:flex">
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -143,9 +144,9 @@ export default function Navbar() {
         </div>
 
         {/* Right side */}
-        <div className="ml-auto flex items-center gap-5">
+        <div className="ml-auto flex items-center gap-2 sm:gap-4 lg:gap-5">
           {/* Search */}
-          <div className="flex h-9 w-[350px] items-center rounded-full border border-blue-500/40 bg-[#071226] px-4">
+          <div className="hidden h-9 w-[300px] items-center rounded-full border border-blue-500/40 bg-[#071226] px-4 xl:flex 2xl:w-[350px]">
             <FiSearch className="mr-3 shrink-0 text-base text-slate-400" />
             <input
               type="text"
@@ -160,7 +161,7 @@ export default function Navbar() {
           {connected && (
             <Link
               href="/profile"
-              className="text-slate-400 transition hover:text-white"
+              className="hidden text-slate-400 transition hover:text-white lg:block"
               aria-label="Profile"
             >
               <FiUser className="text-xl" />
@@ -175,7 +176,7 @@ export default function Navbar() {
                 setVerifyOnConnect(true);
                 setVisible(true);
               }}
-              className="cursor-pointer rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
+              className="cursor-pointer whitespace-nowrap rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 px-3 py-2 text-[11px] font-semibold text-white transition hover:opacity-90 sm:px-5 sm:py-2.5 sm:text-xs"
             >
               Connect Wallet
             </button>
@@ -184,7 +185,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setAccountMenuOpen((open) => !open)}
-                className="cursor-pointer rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
+                className="cursor-pointer whitespace-nowrap rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 px-3 py-2 text-[11px] font-semibold text-white transition hover:opacity-90 sm:px-5 sm:py-2.5 sm:text-xs"
                 aria-expanded={accountMenuOpen}
               >
                 {shortAddress}
@@ -229,8 +230,61 @@ export default function Navbar() {
               )}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            aria-label={
+              mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"
+            }
+            aria-expanded={mobileMenuOpen}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-slate-200 transition hover:border-cyan-400/50 hover:text-white lg:hidden"
+          >
+            {mobileMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+          </button>
         </div>
       </nav>
+
+      {mobileMenuOpen && (
+        <div className="motion-safe:animate-[nova-fade-down_180ms_ease-out_both] border-t border-white/10 px-3 pb-4 pt-3 sm:px-4 lg:hidden">
+          <nav aria-label="Mobile navigation" className="grid grid-cols-2 gap-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex min-h-11 items-center rounded-lg px-3 text-sm transition ${
+                  link.name === "Explore"
+                    ? "bg-white/[0.06] font-medium text-white"
+                    : "text-slate-300 hover:bg-white/[0.04] hover:text-white"
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+            {connected && (
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex min-h-11 items-center rounded-lg px-3 text-sm text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
+              >
+                Profile
+              </Link>
+            )}
+          </nav>
+
+          <label className="mt-3 flex h-11 items-center gap-3 rounded-xl border border-blue-500/30 bg-[#071226] px-3">
+            <FiSearch className="shrink-0 text-slate-400" />
+            <input
+              type="search"
+              placeholder="Search collections, NFTs, creators..."
+              aria-label="Search collections, NFTs, and creators"
+              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+            />
+          </label>
+        </div>
+      )}
+
       <WalletVerificationModal
         isOpen={
           verifyOnConnect &&

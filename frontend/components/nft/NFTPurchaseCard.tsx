@@ -51,7 +51,7 @@ export default function NFTPurchaseCard({
 
   return (
     <div className="mt-5 rounded-2xl border border-[#152849] bg-gradient-to-br from-[#061126] to-[#030b18] p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm text-blue-400">
             {listing ? (isOwner ? "Your listing" : "Current Price") : "Sale status"}
@@ -82,8 +82,8 @@ export default function NFTPurchaseCard({
           )}
         </div>
 
-        <div className="rounded-xl border border-[#172c4c] bg-[#071226] px-3 py-2.5 text-right">
-          <p className="flex items-center justify-end gap-1 text-xs text-blue-400">
+        <div className="rounded-xl border border-[#172c4c] bg-[#071226] px-3 py-2.5 text-left sm:text-right">
+          <p className="flex items-center gap-1 text-xs text-blue-400 sm:justify-end">
             <FiEye /> Last Sale
           </p>
           {lastSale ? (
@@ -138,11 +138,11 @@ export default function NFTPurchaseCard({
         )}
       </div>
 
-      <div className="mt-4 grid grid-cols-[1fr_1fr_48px] gap-3">
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_40px] gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_48px] sm:gap-3">
         <button
           type="button"
           onClick={onFavorite}
-          className={`flex items-center justify-center gap-2 rounded-xl border px-2 py-3 text-xs transition ${
+          className={`flex min-w-0 items-center justify-center gap-1 rounded-xl border px-1.5 py-3 text-center text-[11px] transition sm:gap-2 sm:px-2 sm:text-xs ${
             favorite
               ? "border-pink-500/60 bg-pink-500/10 text-pink-300"
               : "border-[#1b3152] text-blue-200 hover:border-pink-500/60"
@@ -154,7 +154,7 @@ export default function NFTPurchaseCard({
         <button
           type="button"
           onClick={onShare}
-          className="flex items-center justify-center gap-2 rounded-xl border border-[#1b3152] px-2 py-3 text-xs text-blue-200 transition hover:border-cyan-400"
+          className="flex min-w-0 items-center justify-center gap-1 rounded-xl border border-[#1b3152] px-1.5 py-3 text-center text-[11px] text-blue-200 transition hover:border-cyan-400 sm:gap-2 sm:px-2 sm:text-xs"
         >
           <FiShare2 /> Share
         </button>

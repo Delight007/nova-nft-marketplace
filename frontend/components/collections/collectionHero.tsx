@@ -12,6 +12,7 @@ import CollectionImage from "./CollectionImage";
 export default function CollectionHero() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   const {
     data: featuredCollections = [],
@@ -27,6 +28,16 @@ export default function CollectionHero() {
 
   const activeCollection = featuredCollections[activeIndex];
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+
+    return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
   // Keep the active index valid when the API data changes.
   useEffect(() => {
     if (activeIndex >= featuredCollections.length) {
@@ -36,14 +47,20 @@ export default function CollectionHero() {
 
   // Automatically advance the carousel.
   useEffect(() => {
-    if (isPaused || featuredCollections.length <= 1) return;
+    if (
+      isPaused ||
+      prefersReducedMotion ||
+      featuredCollections.length <= 1
+    ) {
+      return;
+    }
 
     const interval = setInterval(() => {
       setActiveIndex((current) => (current + 1) % featuredCollections.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isPaused, featuredCollections.length]);
+  }, [isPaused, prefersReducedMotion, featuredCollections.length]);
 
   const goToPrevious = () => {
     setActiveIndex((current) =>
@@ -80,6 +97,8 @@ export default function CollectionHero() {
         className="mx-auto max-w-7xl px-6 py-5 lg:px-10 lg:py-10"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
       >
         <div className="grid min-h-[196px] grid-cols-1 gap-6 lg:grid-cols-[440px_minmax(0,1fr)] lg:gap-[50px]">
           {/* LEFT CONTENT */}
@@ -188,15 +207,15 @@ export default function CollectionHero() {
                   >
                     <div>
                       {/* Featured badge */}
-                      <div className="inline-flex animate-[collectionFade_0.45s_ease-out] items-center gap-2 rounded-full border border-violet-400/30 bg-[#17142f]/80 px-3 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+                      <div className="inline-flex motion-safe:animate-[collectionFade_0.45s_ease-out] items-center gap-2 rounded-full border border-violet-400/30 bg-[#17142f]/80 px-3 py-1 text-[10px] font-medium text-white backdrop-blur-md">
                         <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
                         Featured Collection
                       </div>
 
                       {/* Collection title */}
-                      <div className="mt-3 animate-[collectionFade_0.45s_ease-out]">
-                        <div className="flex items-center gap-2.5">
-                          <h2 className="text-[28px] font-semibold leading-none tracking-[-1px] text-white md:text-[30px]">
+                      <div className="mt-3 motion-safe:animate-[collectionFade_0.45s_ease-out]">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <h2 className="min-w-0 break-words text-2xl font-semibold leading-tight tracking-[-1px] text-white sm:text-[28px] md:text-[30px]">
                             {activeCollection.name}
                           </h2>
 

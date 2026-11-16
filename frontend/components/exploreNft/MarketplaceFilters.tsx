@@ -51,8 +51,8 @@ export default function MarketplaceFilters({
 
   return (
     <section className="container border-b border-white/5">
-      <div className="container mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-6 py-3 lg:flex-row lg:items-center lg:gap-4 lg:px-10">
-        <div className="w-full overflow-x-auto">
+      <div className="container mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-4 py-3 motion-safe:animate-[nova-fade-up_350ms_ease-out_both] sm:px-6 lg:flex-row lg:items-center lg:gap-4 lg:px-10">
+        <div className="w-full overflow-x-auto overscroll-x-contain scrollbar-hidden">
           <div className="flex w-max items-center gap-2">
             {categories.map((item) => {
               const isActive = category === item;
@@ -63,7 +63,7 @@ export default function MarketplaceFilters({
                   type="button"
                   onClick={() => onCategoryChange(item)}
                   aria-pressed={isActive}
-                  className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-medium transition-all ${
+                  className={`min-h-11 shrink-0 rounded-full px-4 py-2.5 text-xs font-medium transition-all ${
                     isActive
                       ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/20"
                       : "border border-white/5 bg-[#08101f] text-slate-400 hover:border-purple-500/20 hover:text-white"
@@ -76,12 +76,12 @@ export default function MarketplaceFilters({
           </div>
         </div>
 
-        <div className="flex w-full shrink-0 items-center justify-end gap-3 sm:gap-4">
+        <div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-2 sm:gap-3 lg:w-auto lg:flex-nowrap lg:justify-end">
           <button
             type="button"
             onClick={() => onVerifiedOnlyChange(!verifiedOnly)}
             aria-pressed={verifiedOnly}
-            className="flex items-center gap-2 text-xs text-slate-400 transition hover:text-white"
+            className="flex min-h-10 items-center gap-2 text-[11px] text-slate-400 transition hover:text-white sm:text-xs"
           >
             <span>Verified Only</span>
             <span
@@ -102,7 +102,7 @@ export default function MarketplaceFilters({
               type="button"
               onClick={() => setSortOpen((previous) => !previous)}
               aria-expanded={sortOpen}
-              className="flex items-center gap-3 rounded-xl border border-white/5 px-4 py-2.5 text-xs text-slate-300 transition hover:border-purple-500/30"
+              className="flex min-h-10 max-w-full items-center gap-1.5 rounded-xl border border-white/5 px-2.5 text-[11px] text-slate-300 transition hover:border-purple-500/30 sm:gap-3 sm:px-4 sm:text-xs"
             >
               <span className="text-slate-500">Sort by</span>
               <span>{currentSort.label}</span>
@@ -147,7 +147,7 @@ export default function MarketplaceFilters({
               onClick={() => onViewChange("grid")}
               aria-label="Grid view"
               aria-pressed={view === "grid"}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition ${
                 view === "grid"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
                   : "text-slate-500 hover:text-white"
@@ -160,7 +160,7 @@ export default function MarketplaceFilters({
               onClick={() => onViewChange("list")}
               aria-label="List view"
               aria-pressed={view === "list"}
-              className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
+              className={`flex h-10 w-10 items-center justify-center rounded-lg transition ${
                 view === "list"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
                   : "text-slate-500 hover:text-white"

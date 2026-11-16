@@ -30,7 +30,7 @@ export default function NFTCard({ nft, view }: NFTCardProps) {
 
   return (
     <article
-      className={`group overflow-hidden rounded-[14px] border border-[#172640] bg-[#050b17] p-[3px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-500/50 hover:shadow-[0_12px_35px_rgba(139,92,246,0.12)] ${
+      className={`group motion-safe:animate-[nova-fade-up_400ms_ease-out_both] overflow-hidden rounded-[14px] border border-[#172640] bg-[#050b17] p-[3px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-500/50 hover:shadow-[0_12px_35px_rgba(139,92,246,0.12)] ${
         view === "list" ? "flex flex-col sm:flex-row" : ""
       }`}
     >

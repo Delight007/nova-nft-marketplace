@@ -36,7 +36,7 @@ export default function CollectionItemCard({
 }: CollectionItemCardProps) {
   return (
     <article
-      className={`group overflow-hidden rounded-xl border border-[#172b45] bg-[#050d1b] transition duration-300 hover:-translate-y-0.5 hover:border-purple-500/50 hover:shadow-[0_8px_35px_rgba(94,50,220,0.10)] ${
+      className={`group motion-safe:animate-[nova-fade-up_400ms_ease-out_both] overflow-hidden rounded-xl border border-[#172b45] bg-[#050d1b] transition duration-300 hover:-translate-y-0.5 hover:border-purple-500/50 hover:shadow-[0_8px_35px_rgba(94,50,220,0.10)] ${
         gridView ? "" : "flex items-center gap-4 p-3"
       }`}
     >

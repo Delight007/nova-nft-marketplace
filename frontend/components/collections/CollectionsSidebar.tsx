@@ -648,7 +648,7 @@ export default function CollectionsSidebar({
 
   return (
     <aside className="w-full">
-      <div className="sticky top-5 rounded-xl border border-blue-500/30 bg-[#030b19] p-4">
+      <div className="rounded-xl border border-blue-500/30 bg-[#030b19] p-4 lg:sticky lg:top-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FiSliders className="h-4 w-4 text-violet-400" />

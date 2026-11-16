@@ -30,7 +30,7 @@ function formatSol(value: number) {
 
 export default function CollectionCard({ collection }: CollectionCardProps) {
   return (
-    <article className="group overflow-hidden rounded-xl border border-blue-500/30 bg-[#030c1b] transition-all duration-300 hover:-translate-y-0.5 hover:border-violet-500/60 hover:shadow-[0_8px_35px_rgba(76,29,149,0.18)]">
+    <article className="group motion-safe:animate-[nova-fade-up_400ms_ease-out_both] overflow-hidden rounded-xl border border-blue-500/30 bg-[#030c1b] transition-all duration-300 hover:-translate-y-0.5 hover:border-violet-500/60 hover:shadow-[0_8px_35px_rgba(76,29,149,0.18)]">
       {/* ============================================================
           COLLECTION IMAGE
       ============================================================ */}
