@@ -104,6 +104,19 @@ export default function ProfileEditModal({ onClose }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    const bodyOverflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = rootOverflow;
+    };
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -281,7 +294,7 @@ export default function ProfileEditModal({ onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#01040c]/85 p-3 backdrop-blur-md sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#01040c]/85 p-3 backdrop-blur-md sm:p-6"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -290,7 +303,7 @@ export default function ProfileEditModal({ onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-profile-title"
-        className="relative my-auto max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-2xl border border-purple-500/20 bg-[#050b18] shadow-[0_0_80px_rgba(79,70,229,0.12)]"
+        className="custom-scrollbar relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-6xl overflow-y-auto rounded-2xl border border-purple-500/20 bg-[#050b18] shadow-[0_0_80px_rgba(79,70,229,0.12)] sm:max-h-[calc(100dvh-3rem)]"
       >
         {/* Top glow */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500 to-cyan-400" />
