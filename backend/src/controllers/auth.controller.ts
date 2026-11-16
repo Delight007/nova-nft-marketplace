@@ -68,7 +68,7 @@ export async function verifyWallet(req: Request, res: Response) {
     res.cookie("nova_session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
       maxAge: sessionDurationSeconds * 1000,
     });

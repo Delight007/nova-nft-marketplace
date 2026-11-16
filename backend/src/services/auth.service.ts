@@ -24,7 +24,10 @@ export async function createWalletChallenge(wallet: string) {
 
   const expiresAt = new Date(Date.now() + CHALLENGE_EXPIRY_MINUTES * 60 * 1000);
 
-  const domain = process.env.AUTH_DOMAIN ?? "localhost:3000";
+  const frontendOrigin =
+    process.env.FRONTEND_URL ?? "http://localhost:3000";
+  const domain =
+    process.env.AUTH_DOMAIN ?? new URL(frontendOrigin).host;
 
   const message = [
     `${domain} wants you to sign in to NOVA NFT Marketplace.`,
