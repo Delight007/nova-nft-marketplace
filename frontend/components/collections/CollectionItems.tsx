@@ -7,6 +7,7 @@ import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FiTag } from "react-icons/fi";
 import BuyNFTModal from "./collectionItems/BuyNFTModal";
 import CollectionActivityFeed from "./collectionItems/CollectionActivityFeed";
@@ -14,10 +15,24 @@ import CollectionItemsBars from "./collectionItems/CollectionItemsBars";
 import CollectionItemsFilters from "./collectionItems/CollectionItemsFilters";
 import CollectionItemsGrid from "./collectionItems/CollectionItemsGrid";
 import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
+import ListNFTModal from "@/components/profile/listNFTModal";
+import CancelListingModal from "@/components/profile/cancelListingModal";
+import { useListNFTOnChain } from "@/hooks/use-list-nft-on-chain";
+import { collectionDetailKeys } from "@/hooks/use-collection-details";
+import { useNotify } from "@/components/providers/notification-provider";
+import type {
+  CollectionDetailsData,
+  CollectionNFT,
+} from "@/services/collections";
+import type { CollectedNFT } from "@/services/user";
 import type {
   CollectionItemsTab,
   NFTItem,
 } from "./collectionItems/collectionItemsData";
+
+type ListingNFT = Omit<CollectedNFT, "mintAddress"> & {
+  mintAddress: string;
+};
 
 type CollectionItemsProps = {
   slug: string;
@@ -25,6 +40,37 @@ type CollectionItemsProps = {
   onListForSale?: (item: NFTItem) => void;
   onOpenNFT?: (item: NFTItem) => void;
 };
+
+function toListingNFT(
+  nft: CollectionNFT,
+  collection: CollectionDetailsData,
+): ListingNFT {
+  return {
+    id: nft.id,
+    mintAddress: nft.mintAddress,
+    name: nft.name,
+    description: nft.description,
+    image: nft.image,
+    metadataUri: nft.metadataUri,
+    attributes: nft.attributes,
+    createdAt: nft.createdAt,
+    collection: {
+      id: collection.id,
+      name: collection.name,
+      slug: collection.slug,
+      image: collection.image,
+      verified: collection.verified,
+    },
+    listing: nft.listing
+      ? {
+          id: nft.listing.id,
+          price: String(nft.listing.price),
+          currency: nft.listing.currency,
+          listedAt: nft.listing.listedAt,
+        }
+      : null,
+  };
+}
 
 const DEFAULT_TRAITS: NFTItem["traits"] = {
   Background: "Unknown",
@@ -113,6 +159,9 @@ export default function CollectionItems({
   const isWalletVerified =
     connected && currentUser?.wallet === connectedWallet;
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { hasActiveListing } = useListNFTOnChain();
+  const notify = useNotify();
 
   const [activeTab, setActiveTab] = useState<CollectionItemsTab>("Items");
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -138,6 +187,77 @@ export default function CollectionItems({
     useState<NFTItem | null>(null);
   const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
+  const [selectedNFTForListing, setSelectedNFTForListing] =
+    useState<ListingNFT | null>(null);
+  const [listingModalOpen, setListingModalOpen] = useState(false);
+  const [cancelListingModalOpen, setCancelListingModalOpen] = useState(false);
+  const [listingVerificationModalOpen, setListingVerificationModalOpen] =
+    useState(false);
+  const [isCheckingListing, setIsCheckingListing] = useState(false);
+
+  const handleManageListing = async (nft: ListingNFT) => {
+    setIsCheckingListing(true);
+    notify("Checking the on-chain listing.", "info");
+
+    try {
+      if (await hasActiveListing(nft.mintAddress)) {
+        notify("An active listing was found.", "info");
+        setCancelListingModalOpen(true);
+      } else {
+        notify("No active listing was found.", "info");
+        setListingModalOpen(true);
+      }
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Could not check the on-chain listing.",
+        "error",
+      );
+    } finally {
+      setIsCheckingListing(false);
+    }
+  };
+
+  const handleListForSale = async (item: NFTItem) => {
+    if (isCheckingListing) return;
+
+    if (onListForSale) {
+      onListForSale(item);
+      return;
+    }
+
+    const collectionNFT = collection?.nfts.find((nft) => nft.id === item.id);
+    if (!collection || !collectionNFT || !item.mintAddress) {
+      notify("This NFT is missing listing information.", "error");
+      return;
+    }
+
+    const listingNFT = toListingNFT(collectionNFT, collection);
+    setSelectedNFTForListing(listingNFT);
+
+    if (!isWalletVerified) {
+      setListingVerificationModalOpen(true);
+      return;
+    }
+
+    await handleManageListing(listingNFT);
+  };
+
+  const closeListingFlow = () => {
+    setListingModalOpen(false);
+    setCancelListingModalOpen(false);
+    setListingVerificationModalOpen(false);
+    setSelectedNFTForListing(null);
+  };
+
+  const refreshCollection = (message: string) => {
+    closeListingFlow();
+    notify(message, "success");
+    void queryClient.invalidateQueries({
+      queryKey: collectionDetailKeys.detail(slug),
+    });
+  };
 
   const handleOpenNFT = (item: NFTItem) => {
     if (onOpenNFT) {
@@ -394,7 +514,9 @@ export default function CollectionItems({
                       setPurchaseModalOpen(true);
                     }
                   }}
-                  onListForSale={onListForSale}
+                  onListForSale={(item) => {
+                    void handleListForSale(item);
+                  }}
                   onOpenNFT={handleOpenNFT}
                 />
               )}
@@ -448,6 +570,32 @@ export default function CollectionItems({
             }
           }}
         />
+        <WalletVerificationModal
+          isOpen={listingVerificationModalOpen}
+          onClose={closeListingFlow}
+          onVerified={() => {
+            setListingVerificationModalOpen(false);
+            if (selectedNFTForListing) {
+              void handleManageListing(selectedNFTForListing);
+            }
+          }}
+        />
+        {selectedNFTForListing && listingModalOpen && (
+          <ListNFTModal
+            nft={selectedNFTForListing}
+            onClose={closeListingFlow}
+            onSuccess={() => refreshCollection("NFT listed successfully.")}
+          />
+        )}
+        {selectedNFTForListing && cancelListingModalOpen && (
+          <CancelListingModal
+            nft={selectedNFTForListing}
+            onClose={closeListingFlow}
+            onSuccess={() =>
+              refreshCollection("NFT listing cancelled successfully.")
+            }
+          />
+        )}
       </div>
     </section>
   );

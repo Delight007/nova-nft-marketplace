@@ -236,6 +236,19 @@ function shortenWallet(wallet: string) {
   return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
 }
 
+function getSafeHttpUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 type ProfileHeroProps = {
   forceEditOpen?: boolean;
   onEditClose?: () => void;
@@ -331,6 +344,13 @@ export default function ProfileHero({
   const displayName = profile.username
     ? `@${profile.username}`
     : shortenWallet(profile.wallet);
+  const avatarUrl = getSafeHttpUrl(profile.avatar);
+  const bannerUrl =
+    getSafeHttpUrl(profile.banner) ??
+    "https://images.unsplash.com/photo-1519608487953-e999c86e7455";
+  const twitterUrl = getSafeHttpUrl(profile.twitter);
+  const discordUrl = getSafeHttpUrl(profile.discord);
+  const websiteUrl = getSafeHttpUrl(profile.website);
 
   return (
     <>
@@ -339,7 +359,7 @@ export default function ProfileHero({
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url("${profile.banner || "https://images.unsplash.com/photo-1519608487953-e999c86e7455"}")`,
+            backgroundImage: `url("${bannerUrl}")`,
           }}
           role="img"
           aria-label="Profile banner"
@@ -354,9 +374,9 @@ export default function ProfileHero({
             <div className="hidden shrink-0 md:block">
               <div className="rounded-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-cyan-400 p-[3px] shadow-[0_0_35px_rgba(168,85,247,0.3)]">
                 <div className="flex h-[145px] w-[145px] items-center justify-center overflow-hidden rounded-full bg-[#020817] p-1">
-                  {profile.avatar ? (
+                  {avatarUrl ? (
                     <img
-                      src={profile.avatar}
+                      src={avatarUrl}
                       alt={displayName}
                       className="h-full w-full rounded-full object-cover"
                     />
@@ -377,9 +397,9 @@ export default function ProfileHero({
                   {/* Mobile avatar */}
                   <div className="mb-5 md:hidden">
                     <div className="inline-flex h-[100px] w-[100px] items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 p-[3px]">
-                      {profile.avatar ? (
+                      {avatarUrl ? (
                         <img
-                          src={profile.avatar}
+                          src={avatarUrl}
                           alt={displayName}
                           className="h-full w-full rounded-full object-cover"
                         />
@@ -433,9 +453,9 @@ export default function ProfileHero({
 
                   {/* Social links */}
                   <div className="mt-5 flex flex-wrap items-center gap-5">
-                    {profile.twitter && (
+                    {twitterUrl && (
                       <a
-                        href={profile.twitter}
+                        href={twitterUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Twitter profile"
@@ -445,9 +465,9 @@ export default function ProfileHero({
                       </a>
                     )}
 
-                    {profile.discord && (
+                    {discordUrl && (
                       <a
-                        href={profile.discord}
+                        href={discordUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Discord"
@@ -457,16 +477,16 @@ export default function ProfileHero({
                       </a>
                     )}
 
-                    {profile.website && (
+                    {websiteUrl && (
                       <a
-                        href={profile.website}
+                        href={websiteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-sm text-cyan-400 transition hover:text-cyan-300"
                       >
                         <FaGlobe />
                         <span className="max-w-48 truncate">
-                          {profile.website.replace(/^https?:\/\//, "")}
+                          {websiteUrl.replace(/^https?:\/\//, "")}
                         </span>
                       </a>
                     )}

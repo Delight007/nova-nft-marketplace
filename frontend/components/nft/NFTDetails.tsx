@@ -125,11 +125,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { useState } from "react";
-import { FiArrowLeft, FiBell } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
 import BuyNFTModal from "@/components/collections/collectionItems/BuyNFTModal";
 import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
 import CancelListingModal from "@/components/profile/cancelListingModal";
 import ListNFTModal from "@/components/profile/listNFTModal";
+import { useNotify } from "@/components/providers/notification-provider";
 import type { CollectedNFT } from "@/services/user";
 import NFTArtworkGallery from "./NFTArtworkGallery";
 import NFTDetailsPanel from "./NFTDetailsPanel";
@@ -148,11 +149,11 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
     connected && Boolean(publicKey),
   );
   const queryClient = useQueryClient();
+  const notify = useNotify();
 
   const [favorite, setFavorite] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [notice, setNotice] = useState("");
   const [buyOpen, setBuyOpen] = useState(false);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
@@ -211,18 +212,21 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
     try {
       await navigator.clipboard.writeText(nft.owner.wallet);
       setCopied(true);
-      setNotice("Wallet address copied");
+      notify("Wallet address copied.", "success");
     } catch {
-      setNotice("Unable to copy address");
+      notify("Unable to copy address.", "error");
     }
   };
 
   const shareNFT = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      setNotice("NFT link copied to clipboard");
+      notify("NFT link copied to clipboard.", "success");
     } catch {
-      setNotice("Share this page using your browser's address bar");
+      notify(
+        "Share this page using your browser's address bar.",
+        "error",
+      );
     }
   };
 
@@ -288,7 +292,7 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
             onShare={shareNFT}
             onShowMore={() => setShowMore(true)}
             onCloseMore={() => setShowMore(false)}
-            onAction={setNotice}
+            onAction={notify}
             onBuy={() => {
               if (isWalletVerified) {
                 setBuyOpen(true);
@@ -302,7 +306,7 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
           <NFTSidebar
             nft={nft}
             isLoading={isPending}
-            onAction={setNotice}
+            onAction={notify}
             onShare={shareNFT}
           />
         </section>
@@ -310,7 +314,7 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
         <NFTDetailsPanel
           nft={nft}
           isLoading={isPending}
-          onAction={setNotice}
+          onAction={notify}
         />
 
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[#142541] pt-5 text-xs text-slate-500">
@@ -359,6 +363,7 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
           onClose={() => setListOpen(false)}
           onSuccess={() => {
             setListOpen(false);
+            notify("NFT listed successfully.", "success");
             void refreshNFT();
           }}
         />
@@ -370,28 +375,10 @@ export default function NFTDetails({ id }: NFTDetailsProps) {
           onClose={() => setCancelListingOpen(false)}
           onSuccess={() => {
             setCancelListingOpen(false);
+            notify("NFT listing cancelled successfully.", "success");
             void refreshNFT();
           }}
         />
-      )}
-
-      {notice && (
-        <div
-          role="status"
-          className="fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-3 rounded-xl border border-[#29476b] bg-[#0b1930] px-5 py-3 text-sm text-blue-100 shadow-2xl"
-        >
-          <span className="text-cyan-400">
-            <FiBell />
-          </span>
-          <span>{notice}</span>
-          <button
-            onClick={() => setNotice("")}
-            aria-label="Dismiss notification"
-            className="ml-2 text-slate-400 hover:text-white"
-          >
-            ×
-          </button>
-        </div>
       )}
     </section>
   );

@@ -5,6 +5,7 @@ import {
   useCurrentUser,
 } from "@/hooks/use-current-user";
 import { authenticateWalletSession } from "@/lib/auth";
+import { useNotify } from "@/components/providers/notification-provider";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,12 +31,12 @@ export default function WalletVerificationModal({
   const { publicKey, connected, signMessage } = useWallet();
   const { setVisible } = useWalletModal();
   const queryClient = useQueryClient();
+  const notify = useNotify();
   const walletAddress = publicKey?.toBase58();
   const { data: currentUser, isPending: isCheckingSession } = useCurrentUser(
     connected && Boolean(walletAddress),
   );
   const [isVerifying, setIsVerifying] = useState(false);
-  const [error, setError] = useState("");
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -80,13 +81,13 @@ export default function WalletVerificationModal({
 
   async function verifyWallet() {
     if (!walletAddress || !signMessage) {
-      setError(
+      notify(
         "Connect a wallet that supports message signing to verify ownership.",
+        "error",
       );
       return;
     }
 
-    setError("");
     setIsVerifying(true);
 
     try {
@@ -95,13 +96,14 @@ export default function WalletVerificationModal({
       completedRef.current = true;
       onVerified();
     } catch (verificationError) {
-      setError(
+      notify(
         axios.isAxiosError<{ message?: string }>(verificationError)
           ? (verificationError.response?.data?.message ??
             verificationError.message)
           : verificationError instanceof Error
             ? verificationError.message
             : "Wallet verification failed.",
+        "error",
       );
     } finally {
       setIsVerifying(false);
@@ -149,12 +151,6 @@ export default function WalletVerificationModal({
         {connected && isCheckingSession && (
           <p className="mt-4 text-sm text-cyan-200" role="status">
             Checking wallet verification...
-          </p>
-        )}
-
-        {error && (
-          <p className="mt-4 text-sm text-red-300" role="alert">
-            {error}
           </p>
         )}
 

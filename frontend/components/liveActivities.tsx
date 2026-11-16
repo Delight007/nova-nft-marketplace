@@ -1,105 +1,140 @@
-import Image from "next/image";
+"use client";
 
-const activities = [
-  {
-    id: 1,
-    user: "0x7a...3f2e",
-    action: "purchased",
-    nft: "Cyber Soul #1189",
-    time: "2m",
-    image: "/images/n3.jpg",
-  },
-  {
-    id: 2,
-    user: "PixelNomad",
-    action: "listed",
-    nft: "Floating Island #2047",
-    time: "5m",
-    image: "/images/n2.png",
-  },
-  {
-    id: 3,
-    user: "3xKp...9a1a",
-    action: "bought",
-    nft: "Ape #5271",
-    time: "7m",
-    image: "/images/n.png",
-  },
-  {
-    id: 4,
-    user: "Dreamer",
-    action: "offered 2.5 SOL for",
-    nft: "Rebirth #331",
-    time: "12m",
-    image: "/images/n3.jpg",
-  },
-  {
-    id: 5,
-    user: "0x9c...4e7e",
-    action: "purchased",
-    nft: "The Last Light #903",
-    time: "15m",
-    image: "/images/n2.png",
-  },
-  {
-    id: 6,
-    user: "LunaArts",
-    action: "created a new collection",
-    nft: "",
-    time: "18m",
-    image: "/images/n.png",
-  },
-];
+import Link from "next/link";
+import { useMarketplaceActivity } from "@/hooks/use-marketplace-activity";
+import { FiRefreshCw } from "react-icons/fi";
+
+const REFRESH_INTERVAL = 30_000;
+
+function formatRelativeTime(value: string) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "Recently";
+
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (elapsedSeconds < 60) return `${elapsedSeconds}s`;
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m`;
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}h`;
+
+  return `${Math.floor(elapsedHours / 24)}d`;
+}
+
+function getActivityVerb(type: string) {
+  switch (type) {
+    case "Sale":
+      return "purchased";
+    case "Listing":
+      return "listed";
+    case "Delisting":
+      return "delisted";
+    case "Mint":
+      return "minted";
+    default:
+      return "interacted with";
+  }
+}
 
 export default function LiveActivities() {
+  const { data, isPending, isError, error, refetch } = useMarketplaceActivity(
+    { page: 1, limit: 6 },
+    { refetchInterval: REFRESH_INTERVAL },
+  );
+  const activities = data?.activities ?? [];
+
   return (
     <section className="min-w-0 rounded-xl border border-blue-950 bg-[#050e1d] p-3">
-      {/* Heading */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-bold text-white">Live Activity</h2>
 
-        <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          Live
-        </span>
+        {isError ? (
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="flex items-center gap-1.5 text-[11px] font-medium text-red-300 hover:text-red-200"
+          >
+            <FiRefreshCw aria-hidden="true" />
+            Retry
+          </button>
+        ) : isPending ? (
+          <span className="text-[11px] text-slate-400">Connecting</span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            Updates every 30s
+          </span>
+        )}
       </div>
 
-      {/* Activity list */}
-      <div className="space-y-3">
-        {activities.map((activity) => (
-          <div key={activity.id} className="flex min-w-0 items-center gap-3">
-            {/* NFT thumbnail */}
-            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-white/10">
-              <Image
-                src={activity.image}
-                alt={activity.nft || "Collection artwork"}
-                fill
-                sizes="36px"
-                className="object-cover"
-              />
+      {isError ? (
+        <p role="alert" className="py-4 text-xs text-red-200">
+          Could not load marketplace activity
+          {error instanceof Error ? `: ${error.message}` : "."}
+        </p>
+      ) : isPending ? (
+        <div aria-label="Loading live activity" className="space-y-3">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index} className="flex animate-pulse items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-slate-800" />
+              <div className="flex-1 space-y-2">
+                <div className="h-2 w-20 rounded bg-slate-800" />
+                <div className="h-2 w-32 rounded bg-slate-800" />
+              </div>
             </div>
-
-            {/* Activity details */}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[11px] font-medium text-slate-300">
-                {activity.user}
-              </p>
-
-              <p className="mt-0.5 text-[10px] leading-4 text-slate-400">
-                {activity.action}{" "}
-                {activity.nft && (
-                  <span className="text-blue-300">{activity.nft}</span>
+          ))}
+        </div>
+      ) : activities.length === 0 ? (
+        <p className="py-4 text-xs text-slate-400">
+          No marketplace activity yet.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {activities.map((activity) => (
+            <div
+              key={activity.id}
+              className="flex min-w-0 items-center gap-3"
+            >
+              <Link
+                href={`/nft/${encodeURIComponent(activity.nft.id)}`}
+                aria-label={`View ${activity.nft.name}`}
+                className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#0b1830]"
+              >
+                {activity.nft.image && (
+                  <img
+                    src={activity.nft.image}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
                 )}
-              </p>
-            </div>
+              </Link>
 
-            {/* Time */}
-            <span className="shrink-0 self-start pt-0.5 text-[10px] text-slate-500">
-              {activity.time}
-            </span>
-          </div>
-        ))}
-      </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-medium text-slate-300">
+                  {activity.from?.address ?? activity.to?.address ?? "A collector"}
+                </p>
+
+                <p className="mt-0.5 truncate text-[10px] leading-4 text-slate-400">
+                  {getActivityVerb(activity.type)}{" "}
+                  <Link
+                    href={`/nft/${encodeURIComponent(activity.nft.id)}`}
+                    className="text-blue-300 hover:text-cyan-200"
+                  >
+                    {activity.nft.name}
+                  </Link>
+                  {activity.price && ` · ${activity.price.sol} SOL`}
+                </p>
+              </div>
+
+              <span className="shrink-0 self-start pt-0.5 text-[10px] text-slate-500">
+                {formatRelativeTime(activity.createdAt)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

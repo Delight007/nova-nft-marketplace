@@ -1,51 +1,20 @@
 "use client";
 
 import LiveActivities from "@/components/liveActivities";
-import Image from "next/image";
+import { useSolUsdPrice } from "@/hooks/use-sol-usd-price";
 import Link from "next/link";
+import { useFeaturedNFTs } from "@/hooks/use-marketPlace";
 import { useState } from "react";
 import { FiHeart } from "react-icons/fi";
 import { SiSolana } from "react-icons/si";
 
-const featuredNFTs = [
-  {
-    id: 1,
-    name: "Cyber Soul #1189",
-    collection: "Neon Realms",
-    price: "8.3 SOL",
-    usd: "$1,242",
-    image: "/images/n.png",
-  },
-  {
-    id: 2,
-    name: "Sky Islands #2047",
-    collection: "Sky Islands",
-    price: "12.5 SOL",
-    usd: "$1,876",
-    image: "/images/n2.png",
-  },
-  {
-    id: 3,
-    name: "Ape Society #5271",
-    collection: "Ape Society",
-    price: "15.0 SOL",
-    usd: "$2,255",
-    image: "/images/n3.jpg",
-  },
-  {
-    id: 4,
-    name: "The Forgotten #331",
-    collection: "Void Studio",
-    price: "6.7 SOL",
-    usd: "$1,004",
-    image: "/images/n.png",
-  },
-];
-
 export default function FeaturedNFTs() {
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const { data, isPending, isError, error } = useFeaturedNFTs();
+  const { data: solUsdPrice, isError: isSolUsdPriceError } = useSolUsdPrice();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const featuredNFTs = data?.nfts ?? [];
 
-  function toggleFavorite(id: number) {
+  function toggleFavorite(id: string) {
     setFavorites((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
@@ -63,8 +32,8 @@ export default function FeaturedNFTs() {
               <h2 className="text-lg font-bold text-white">Featured NFTs</h2>
 
               <p className="text-xs text-slate-400">
-                Handpicked by our team. Discover the most promising assets in
-                the ecosystem.
+                Discover recently listed and newly added NFTs in the
+                marketplace.
               </p>
             </div>
 
@@ -77,88 +46,140 @@ export default function FeaturedNFTs() {
           </div>
 
           {/* NFT cards */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {featuredNFTs.map((nft) => {
-              const isFavorite = favorites.includes(nft.id);
+          {isPending ? (
+            <div
+              aria-label="Loading featured NFTs"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+            >
+              {Array.from({ length: 4 }, (_, index) => (
+                <div
+                  key={index}
+                  className="aspect-[4/5] animate-pulse rounded-lg border border-blue-900/70 bg-[#061021]"
+                />
+              ))}
+            </div>
+          ) : isError ? (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-950/30 p-4 text-sm text-red-200"
+            >
+              Unable to load featured NFTs
+              {error instanceof Error ? `: ${error.message}` : "."}
+            </p>
+          ) : featuredNFTs.length === 0 ? (
+            <p className="rounded-lg border border-white/10 bg-[#061021] p-4 text-sm text-slate-400">
+              No NFTs are available yet. Check back soon.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {featuredNFTs.map((nft) => {
+                const isFavorite = favorites.includes(nft.id);
+                const nftHref = `/nft/${encodeURIComponent(nft.mintAddress ?? nft.id)}`;
+                const price = nft.listing
+                  ? new Intl.NumberFormat("en-US", {
+                      maximumFractionDigits: 4,
+                    }).format(nft.listing.price)
+                  : null;
+                const usdPrice =
+                  nft.listing?.currency.toUpperCase() === "SOL" && solUsdPrice
+                    ? new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 0,
+                      }).format(nft.listing.price * solUsdPrice.usd)
+                    : null;
 
-              return (
-                <article
-                  key={nft.id}
-                  className="group min-w-0 overflow-hidden rounded-lg border border-blue-900/70 bg-[#061021] transition duration-300 hover:border-cyan-500/60"
-                >
-                  {/* Artwork */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-[#0b1830]">
-                    <Link
-                      href={`/nft/${nft.id}`}
-                      aria-label={`View ${nft.name}`}
-                      className="absolute inset-0"
-                    >
-                      <Image
-                        src={nft.image}
-                        alt={nft.name}
-                        fill
-                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
-                        className="object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    </Link>
+                return (
+                  <article
+                    key={nft.id}
+                    className="group min-w-0 overflow-hidden rounded-lg border border-blue-900/70 bg-[#061021] transition duration-300 hover:border-cyan-500/60"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden bg-[#0b1830]">
+                      <Link
+                        href={nftHref}
+                        aria-label={`View ${nft.name}`}
+                        className="absolute inset-0"
+                      >
+                        {nft.image ? (
+                          <img
+                            src={nft.image}
+                            alt={nft.name}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <span className="flex h-full items-center justify-center text-xs text-slate-500">
+                            No image
+                          </span>
+                        )}
+                      </Link>
 
-                    {/* Favorite button */}
-                    <button
-                      type="button"
-                      onClick={() => toggleFavorite(nft.id)}
-                      aria-label={
-                        isFavorite
-                          ? "Remove from favorites"
-                          : "Add to favorites"
-                      }
-                      aria-pressed={isFavorite}
-                      className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-[#020817]/80 backdrop-blur transition ${
-                        isFavorite
-                          ? "text-pink-400"
-                          : "text-white hover:text-pink-400"
-                      }`}
-                    >
-                      <FiHeart
-                        className={`text-sm ${isFavorite ? "fill-current" : ""}`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* NFT details */}
-                  <div className="p-2.5">
-                    <Link
-                      href={`/nft/${nft.id}`}
-                      className="block truncate text-xs font-semibold text-white hover:text-cyan-300"
-                    >
-                      {nft.name}
-                    </Link>
-
-                    <p className="mt-1 truncate text-[11px] text-slate-400">
-                      {nft.collection}
-                    </p>
-
-                    {/* Price */}
-                    <div className="mt-2 flex items-center justify-between gap-1 border-t border-white/5 pt-2">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <SiSolana
-                          aria-label="Solana"
-                          className="shrink-0 text-sm text-cyan-400"
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(nft.id)}
+                        aria-label={
+                          isFavorite
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
+                        aria-pressed={isFavorite}
+                        className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg border border-white/20 bg-[#020817]/80 backdrop-blur transition ${
+                          isFavorite
+                            ? "text-pink-400"
+                            : "text-white hover:text-pink-400"
+                        }`}
+                      >
+                        <FiHeart
+                          className={`text-sm ${isFavorite ? "fill-current" : ""}`}
                         />
-
-                        <span className="truncate text-xs font-semibold text-white">
-                          {nft.price}
-                        </span>
-                      </div>
-
-                      <span className="shrink-0 text-[10px] text-blue-300">
-                        ≈ {nft.usd}
-                      </span>
+                      </button>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+
+                    <div className="p-2.5">
+                      <Link
+                        href={nftHref}
+                        className="block truncate text-xs font-semibold text-white hover:text-cyan-300"
+                      >
+                        {nft.name}
+                      </Link>
+
+                      <p className="mt-1 truncate text-[11px] text-slate-400">
+                        {nft.collection?.name ?? "Uncategorized"}
+                      </p>
+
+                      <div className="mt-2 flex items-center justify-between gap-1 border-t border-white/5 pt-2">
+                        <span className="truncate text-xs font-semibold text-white">
+                          {price !== null ? (
+                            <>
+                              <SiSolana
+                                aria-label="Solana"
+                                className="mr-1 inline text-sm text-cyan-400"
+                              />
+                              {price} {nft.listing?.currency ?? "SOL"}
+                            </>
+                          ) : (
+                            "Not listed"
+                          )}
+                        </span>
+                        {nft.listing && (
+                          <span
+                            className="shrink-0 text-[10px] text-blue-300"
+                            title="Approximate USD equivalent"
+                          >
+                            {usdPrice
+                              ? `≈ ${usdPrice}`
+                              : isSolUsdPriceError
+                                ? "USD unavailable"
+                                : "USD …"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <LiveActivities />

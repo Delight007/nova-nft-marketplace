@@ -15,6 +15,7 @@ import { SiSolana } from "react-icons/si";
 
 import ListNFTModal from "@/components/profile/listNFTModal";
 import { useListNFTOnChain } from "@/hooks/use-list-nft-on-chain";
+import { useNotify } from "@/components/providers/notification-provider";
 import CancelListingModal from "./cancelListingModal";
 
 interface ProfileNftCardProps {
@@ -35,7 +36,7 @@ export default function ProfileNftCard({
   const [transactionSignature, setTransactionSignature] = useState("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCheckingListing, setIsCheckingListing] = useState(false);
-  const [listingCheckError, setListingCheckError] = useState("");
+  const notify = useNotify();
 
   const collectionName = nft.collection?.name ?? "Uncategorized";
   const listing = nft.listing;
@@ -49,7 +50,6 @@ export default function ProfileNftCard({
       return;
     }
 
-    setListingCheckError("");
     setIsCheckingListing(true);
 
     try {
@@ -59,10 +59,11 @@ export default function ProfileNftCard({
         setShowListingModal(true);
       }
     } catch (error) {
-      setListingCheckError(
+      notify(
         error instanceof Error
           ? error.message
           : "Could not check the on-chain listing.",
+        "error",
       );
     } finally {
       setIsCheckingListing(false);
@@ -72,6 +73,7 @@ export default function ProfileNftCard({
   const handleListingSuccess = (signature: string) => {
     setTransactionSignature(signature);
     setShowListingModal(false);
+    notify("NFT listed successfully.", "success");
   };
 
   return (
@@ -212,12 +214,6 @@ export default function ProfileNftCard({
             </button>
           )}
 
-          {listingCheckError && (
-            <p role="alert" className="mt-2 text-xs text-red-300">
-              {listingCheckError}
-            </p>
-          )}
-
           {canCancel && nft.mintAddress && listing && (
             <button
               type="button"
@@ -272,7 +268,10 @@ export default function ProfileNftCard({
         <CancelListingModal
           nft={{ ...nft, mintAddress: nft.mintAddress }}
           onClose={() => setShowCancelModal(false)}
-          onSuccess={() => setShowCancelModal(false)}
+          onSuccess={() => {
+            setShowCancelModal(false);
+            notify("NFT listing cancelled successfully.", "success");
+          }}
         />
       )}
     </>

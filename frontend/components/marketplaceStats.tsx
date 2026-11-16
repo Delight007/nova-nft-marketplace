@@ -1,64 +1,133 @@
-import { FiTrendingUp } from "react-icons/fi";
+"use client";
 
-const stats = [
-  {
-    id: 1,
-    value: "124.8K",
-    label: "Total Volume (SOL)",
-    growth: "+12.5%",
-  },
-  {
-    id: 2,
-    value: "18.6K",
-    label: "Total Collections",
-    growth: "+8.3%",
-  },
-  {
-    id: 3,
-    value: "523.4K",
-    label: "Total NFTs",
-    growth: "+15.7%",
-  },
-  {
-    id: 4,
-    value: "92.7K",
-    label: "Active Users",
-    growth: "+11.2%",
-  },
-];
+import { useMarketplaceStats } from "@/hooks/use-marketPlace";
+import { FiMinus, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+
+function formatStat(value: number) {
+  const formatter =
+    value >= 1_000
+      ? new Intl.NumberFormat("en-US", {
+          notation: "compact",
+          maximumFractionDigits: 1,
+        })
+      : new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 });
+
+  return formatter.format(value);
+}
+
+function formatGrowth(value: number | null | undefined) {
+  if (value === undefined) return "Unavailable";
+  if (value === null) return "New";
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
 
 export default function MarketplaceStats() {
+  const { data, isPending, isError, error, refetch } = useMarketplaceStats();
+  const stats = data
+    ? [
+        {
+          id: "volume",
+          value: formatStat(data.totalVolume),
+          label: "Total Volume (SOL)",
+          growth: data.growth?.totalVolume,
+        },
+        {
+          id: "collections",
+          value: formatStat(data.totalCollections),
+          label: "Total Collections",
+          growth: data.growth?.totalCollections,
+        },
+        {
+          id: "nfts",
+          value: formatStat(data.totalNFTs),
+          label: "Total NFTs",
+          growth: data.growth?.totalNFTs,
+        },
+        {
+          id: "creators",
+          value: formatStat(data.totalCreators),
+          label: "Marketplace Creators",
+          growth: data.growth?.totalCreators,
+        },
+      ]
+    : [];
+
   return (
     <section className="relative min-w-0 overflow-hidden rounded-xl border border-blue-950 bg-[#050e1d] px-3 pb-4 pt-3">
-      {/* Heading */}
-      <h2 className="relative z-10 mb-4 text-sm font-bold text-white">
-        Marketplace Stats
-      </h2>
-
-      {/* Statistics */}
-      <div className="relative z-10 grid grid-cols-2 gap-y-5">
-        {stats.map((stat) => (
-          <div
-            key={stat.id}
-            className="min-w-0 border-l border-white/10 px-2 odd:border-l-0"
-          >
-            <p className="text-base font-semibold tracking-tight text-white">
-              {stat.value}
-            </p>
-
-            <p className="mt-1 text-[10px] leading-4 text-slate-400">
-              {stat.label}
-            </p>
-
-            <p className="mt-2 flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-              <FiTrendingUp />
-              {stat.growth}
-            </p>
-          </div>
-        ))}
+      <div className="relative z-10 mb-4 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-bold text-white">Marketplace Stats</h2>
+        <span className="text-[9px] text-slate-500">30-day change</span>
       </div>
 
-      {/* Decorative neon wave */}
+      {isPending ? (
+        <div
+          aria-label="Loading marketplace statistics"
+          className="relative z-10 grid grid-cols-2 gap-3"
+        >
+          {Array.from({ length: 4 }, (_, index) => (
+            <div
+              key={index}
+              className="h-[68px] animate-pulse rounded bg-white/5"
+            />
+          ))}
+        </div>
+      ) : isError ? (
+        <div
+          role="alert"
+          className="relative z-10 rounded bg-red-950/30 p-3 text-xs text-red-200"
+        >
+          <p>
+            Unable to load marketplace statistics
+            {error instanceof Error ? `: ${error.message}` : "."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="mt-2 font-medium text-red-100 underline underline-offset-2"
+          >
+            Try again
+          </button>
+        </div>
+      ) : (
+        <div className="relative z-10 grid grid-cols-2 gap-y-5">
+          {stats.map((stat) => (
+            <div
+              key={stat.id}
+              className="min-w-0 border-l border-white/10 px-2 odd:border-l-0"
+            >
+              <p className="text-base font-semibold tracking-tight text-white">
+                {stat.value}
+              </p>
+
+              <p className="mt-1 text-[10px] leading-4 text-slate-400">
+                {stat.label}
+              </p>
+
+              <p
+                className={`mt-2 flex items-center gap-1 text-[10px] font-medium ${
+                  stat.growth === undefined
+                    ? "text-slate-500"
+                    : stat.growth === null || stat.growth > 0
+                    ? "text-emerald-400"
+                    : stat.growth < 0
+                      ? "text-rose-400"
+                      : "text-slate-400"
+                }`}
+              >
+                {stat.growth === null || stat.growth === undefined ? null : stat.growth > 0 ? (
+                  <FiTrendingUp aria-hidden="true" />
+                ) : stat.growth < 0 ? (
+                  <FiTrendingDown aria-hidden="true" />
+                ) : (
+                  <FiMinus aria-hidden="true" />
+                )}
+                {formatGrowth(stat.growth)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 opacity-90">
         <svg
           viewBox="0 0 600 70"

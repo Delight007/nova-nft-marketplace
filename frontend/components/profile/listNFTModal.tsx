@@ -2,9 +2,10 @@
 
 import axios from "axios";
 import { useState } from "react";
-import { FaExclamationCircle, FaSpinner, FaTag, FaTimes } from "react-icons/fa";
+import { FaSpinner, FaTag, FaTimes } from "react-icons/fa";
 import { SiSolana } from "react-icons/si";
 
+import { useNotify } from "@/components/providers/notification-provider";
 import { useCreateNFTListing } from "@/hooks/use-create-nft-listing";
 import { useListNFTOnChain } from "@/hooks/use-list-nft-on-chain";
 import type { CollectedNFT } from "@/services/user";
@@ -22,9 +23,9 @@ export default function ListNFTModal({
   onSuccess,
 }: ListNFTModalProps) {
   const [price, setPrice] = useState("");
-  const [error, setError] = useState("");
   const [isListing, setIsListing] = useState(false);
   const [isSavingBackend, setIsSavingBackend] = useState(false);
+  const notify = useNotify();
 
   // Stores the confirmed transaction so we can retry the backend
   // request without submitting another on-chain transaction.
@@ -35,11 +36,10 @@ export default function ListNFTModal({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
 
     // Validate the price only before the on-chain transaction.
     if (!transactionSignature && (!price.trim() || Number(price) <= 0)) {
-      setError("Enter a valid listing price greater than zero.");
+      notify("Enter a valid listing price greater than zero.", "error");
       return;
     }
 
@@ -71,10 +71,11 @@ export default function ListNFTModal({
           ? err.message
           : "Something went wrong while listing your NFT.";
 
-      setError(
+      notify(
         transactionSignature
           ? `${message} Your on-chain transaction is already confirmed. You can retry saving the listing without submitting another transaction.`
           : message,
+        "error",
       );
     } finally {
       setIsListing(false);
@@ -187,16 +188,6 @@ export default function ListNFTModal({
               <p className="mt-1 break-all text-[11px] text-slate-400">
                 {transactionSignature}
               </p>
-            </div>
-          )}
-
-          {error && (
-            <div
-              role="alert"
-              className="flex gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.08] p-3 text-xs leading-5 text-red-300"
-            >
-              <FaExclamationCircle className="mt-0.5 shrink-0" />
-              <span>{error}</span>
             </div>
           )}
 

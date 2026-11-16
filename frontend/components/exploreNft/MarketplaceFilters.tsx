@@ -14,55 +14,76 @@ const categories = [
 ];
 
 const sortOptions = [
-  "Lowest Price",
-  "Highest Price",
-  "Recently Listed",
-  "Most Viewed",
-  "Newest",
-];
+  { label: "Recently Listed", value: "recent" },
+  { label: "Newest", value: "newest" },
+  { label: "Oldest", value: "oldest" },
+  { label: "Lowest Price", value: "price-asc" },
+  { label: "Highest Price", value: "price-desc" },
+] as const;
 
-export default function MarketplaceFilters() {
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [sortBy, setSortBy] = useState("Lowest Price");
+export type MarketplaceSort = (typeof sortOptions)[number]["value"];
+export type MarketplaceView = "grid" | "list";
+
+type MarketplaceFiltersProps = {
+  category: string;
+  onCategoryChange: (category: string) => void;
+  verifiedOnly: boolean;
+  onVerifiedOnlyChange: (verified: boolean) => void;
+  sortBy: MarketplaceSort;
+  onSortChange: (sort: MarketplaceSort) => void;
+  view: MarketplaceView;
+  onViewChange: (view: MarketplaceView) => void;
+};
+
+export default function MarketplaceFilters({
+  category,
+  onCategoryChange,
+  verifiedOnly,
+  onVerifiedOnlyChange,
+  sortBy,
+  onSortChange,
+  view,
+  onViewChange,
+}: MarketplaceFiltersProps) {
   const [sortOpen, setSortOpen] = useState(false);
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const currentSort =
+    sortOptions.find((option) => option.value === sortBy) ?? sortOptions[0];
 
   return (
     <section className="container border-b border-white/5">
-      <div className="container mx-auto px-6 lg:px-10 max-w-7xl flex items-center justify-between  py-2">
-        {/* Categories */}
-        <div className="flex  items-center gap-2 ">
-          {categories.map((category) => {
-            const isActive = activeCategory === category;
+      <div className="container mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-6 py-3 lg:flex-row lg:items-center lg:gap-4 lg:px-10">
+        <div className="w-full overflow-x-auto">
+          <div className="flex w-max items-center gap-2">
+            {categories.map((item) => {
+              const isActive = category === item;
 
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActiveCategory(category)}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-medium transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/20"
-                    : "border border-white/5 bg-[#08101f] text-slate-400 hover:border-purple-500/20 hover:text-white"
-                }`}
-              >
-                {category}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => onCategoryChange(item)}
+                  aria-pressed={isActive}
+                  className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-medium transition-all ${
+                    isActive
+                      ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/20"
+                      : "border border-white/5 bg-[#08101f] text-slate-400 hover:border-purple-500/20 hover:text-white"
+                  }`}
+                >
+                  {item}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Right controls */}
-        <div className="hidden shrink-0 items-center gap-4 lg:flex">
-          {/* Verified Only */}
+        <div className="flex w-full shrink-0 items-center justify-end gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => setVerifiedOnly((prev) => !prev)}
+            onClick={() => onVerifiedOnlyChange(!verifiedOnly)}
+            aria-pressed={verifiedOnly}
             className="flex items-center gap-2 text-xs text-slate-400 transition hover:text-white"
           >
             <span>Verified Only</span>
-
             <span
               className={`relative h-4 w-9 rounded-full transition-colors ${
                 verifiedOnly ? "bg-cyan-400" : "bg-slate-800"
@@ -76,17 +97,15 @@ export default function MarketplaceFilters() {
             </span>
           </button>
 
-          {/* Sort */}
           <div className="relative">
             <button
               type="button"
-              onClick={() => setSortOpen((prev) => !prev)}
-              className="flex items-center gap-3 rounded-xl border border-white/5  px-4 py-2.5 text-xs text-slate-300 transition hover:border-purple-500/30"
+              onClick={() => setSortOpen((previous) => !previous)}
+              aria-expanded={sortOpen}
+              className="flex items-center gap-3 rounded-xl border border-white/5 px-4 py-2.5 text-xs text-slate-300 transition hover:border-purple-500/30"
             >
               <span className="text-slate-500">Sort by</span>
-
-              <span>{sortBy}</span>
-
+              <span>{currentSort.label}</span>
               <FiChevronDown
                 className={`text-slate-500 transition-transform ${
                   sortOpen ? "rotate-180" : ""
@@ -94,28 +113,26 @@ export default function MarketplaceFilters() {
               />
             </button>
 
-            {/* Dropdown */}
             {sortOpen && (
               <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#0a1020] p-1.5 shadow-2xl shadow-black/40">
                 {sortOptions.map((option) => {
-                  const isSelected = sortBy === option;
+                  const isSelected = sortBy === option.value;
 
                   return (
                     <button
-                      key={option}
+                      key={option.value}
                       type="button"
                       onClick={() => {
-                        setSortBy(option);
+                        onSortChange(option.value);
                         setSortOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs  transition ${
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs transition ${
                         isSelected
                           ? "bg-purple-500/10 text-white"
                           : "text-slate-400 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      <span>{option}</span>
-
+                      <span>{option.label}</span>
                       {isSelected && <FiCheck className="text-purple-400" />}
                     </button>
                   );
@@ -124,30 +141,30 @@ export default function MarketplaceFilters() {
             )}
           </div>
 
-          {/* View switcher */}
           <div className="flex items-center rounded-xl border border-white/5 bg-[#08101f] p-1">
             <button
               type="button"
-              onClick={() => setView("grid")}
+              onClick={() => onViewChange("grid")}
+              aria-label="Grid view"
+              aria-pressed={view === "grid"}
               className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
                 view === "grid"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
                   : "text-slate-500 hover:text-white"
               }`}
-              aria-label="Grid view"
             >
               <FiGrid />
             </button>
-
             <button
               type="button"
-              onClick={() => setView("list")}
+              onClick={() => onViewChange("list")}
+              aria-label="List view"
+              aria-pressed={view === "list"}
               className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
                 view === "list"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
                   : "text-slate-500 hover:text-white"
               }`}
-              aria-label="List view"
             >
               <FiList />
             </button>

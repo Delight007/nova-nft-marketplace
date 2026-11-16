@@ -1,10 +1,277 @@
+import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { getSolUsdPrice } from "../services/price.service.js";
 
+export async function getMarketplaceNFTs(req: Request, res: Response) {
+  try {
+    const parseNumber = (value: unknown) => {
+      if (typeof value !== "string" || value.trim() === "") return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+    };
+
+    const pageValue = Number(req.query.page);
+    const limitValue = Number(req.query.limit);
+    const page =
+      Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1;
+    const limit =
+      Number.isInteger(limitValue) && limitValue > 0
+        ? Math.min(limitValue, 100)
+        : 24;
+    const search =
+      typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const category =
+      typeof req.query.category === "string" ? req.query.category.trim() : "";
+    const collections =
+      typeof req.query.collection === "string"
+        ? req.query.collection.split(",").filter(Boolean)
+        : [];
+    const verifiedOnly = req.query.verified === "true";
+    const requestedStatuses =
+      typeof req.query.status === "string"
+        ? req.query.status.split(",").filter(Boolean)
+        : [];
+    const minPrice = parseNumber(req.query.minPrice);
+    const maxPrice = parseNumber(req.query.maxPrice);
+    const sort =
+      typeof req.query.sort === "string" ? req.query.sort : "recent";
+
+    const and: Prisma.NFTWhereInput[] = [];
+
+    if (search) {
+      and.push({
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+          {
+            collection: {
+              is: { name: { contains: search, mode: "insensitive" } },
+            },
+          },
+        ],
+      });
+    }
+
+    if (category && category !== "All") {
+      and.push({
+        OR: [
+          { name: { contains: category, mode: "insensitive" } },
+          { description: { contains: category, mode: "insensitive" } },
+          {
+            collection: {
+              is: { name: { contains: category, mode: "insensitive" } },
+            },
+          },
+          {
+            attributes: {
+              array_contains: [{ trait_type: "Category", value: category }],
+            },
+          },
+          {
+            attributes: {
+              array_contains: [{ trait_type: "Type", value: category }],
+            },
+          },
+        ],
+      });
+    }
+
+    if (collections.length > 0) {
+      and.push({
+        collection: {
+          is: { slug: { in: collections } },
+        },
+      });
+    }
+
+    if (verifiedOnly) {
+      and.push({
+        collection: {
+          is: { verified: true },
+        },
+      });
+    }
+
+    const validStatuses = new Set(["listed", "unlisted", "new"]);
+    const statuses = requestedStatuses.filter((status) =>
+      validStatuses.has(status),
+    );
+    if (statuses.length > 0 && statuses.length < validStatuses.size) {
+      const statusConditions: Prisma.NFTWhereInput[] = [];
+      if (statuses.includes("listed")) {
+        statusConditions.push({
+          listings: { some: { status: "ACTIVE" } },
+        });
+      }
+      if (statuses.includes("unlisted")) {
+        statusConditions.push({
+          listings: { none: { status: "ACTIVE" } },
+        });
+      }
+      if (statuses.includes("new")) {
+        statusConditions.push({
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          },
+        });
+      }
+      and.push({ OR: statusConditions });
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      and.push({
+        listings: {
+          some: {
+            status: "ACTIVE",
+            ...(minPrice !== undefined && { price: { gte: minPrice } }),
+            ...(maxPrice !== undefined && {
+              price: {
+                ...(minPrice !== undefined && { gte: minPrice }),
+                lte: maxPrice,
+              },
+            }),
+          },
+        },
+      });
+    }
+
+    const where: Prisma.NFTWhereInput =
+      and.length > 0 ? { AND: and } : {};
+    const select = {
+      id: true,
+      mintAddress: true,
+      name: true,
+      description: true,
+      image: true,
+      attributes: true,
+      createdAt: true,
+      owner: { select: { wallet: true } },
+      collection: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          image: true,
+          verified: true,
+        },
+      },
+      listings: {
+        where: { status: "ACTIVE" as const },
+        orderBy: { listedAt: "desc" as const },
+        take: 1,
+        select: {
+          price: true,
+          currency: true,
+          listedAt: true,
+        },
+      },
+    };
+
+    const total = await prisma.nFT.count({ where });
+    const offset = (page - 1) * limit;
+    let nfts;
+
+    if (sort === "price-asc" || sort === "price-desc" || sort === "recent") {
+      const listedWhere: Prisma.NFTWhereInput = {
+        AND: [where, { listings: { some: { status: "ACTIVE" } } }],
+      };
+      const unlistedWhere: Prisma.NFTWhereInput = {
+        AND: [where, { listings: { none: { status: "ACTIVE" } } }],
+      };
+      const listedCount = await prisma.nFT.count({ where: listedWhere });
+      const listedRows = await prisma.listing.findMany({
+        where: {
+          status: "ACTIVE",
+          nft: where,
+        },
+        orderBy:
+          sort === "recent"
+            ? [{ listedAt: "desc" }, { id: "asc" }]
+            : [
+                { price: sort === "price-asc" ? "asc" : "desc" },
+                { id: "asc" },
+              ],
+        skip: Math.min(offset, listedCount),
+        take: Math.min(limit, Math.max(0, listedCount - offset)),
+        select: { nft: { select } },
+      });
+      const remaining = limit - listedRows.length;
+      const unlistedRows =
+        remaining > 0
+          ? await prisma.nFT.findMany({
+              where: unlistedWhere,
+              orderBy: { createdAt: "desc" },
+              skip: Math.max(0, offset - listedCount),
+              take: remaining,
+              select,
+            })
+          : [];
+      nfts = [...listedRows.map((row) => row.nft), ...unlistedRows];
+    } else {
+      nfts = await prisma.nFT.findMany({
+            where,
+            orderBy: { createdAt: sort === "oldest" ? "asc" : "desc" },
+            skip: offset,
+            take: limit,
+            select,
+          });
+    }
+
+    const data = nfts.map((nft) => {
+      const listing = nft.listings[0] ?? null;
+      return {
+        id: nft.id,
+        mintAddress: nft.mintAddress,
+        name: nft.name,
+        description: nft.description,
+        image: nft.image,
+        attributes: nft.attributes,
+        createdAt: nft.createdAt,
+        ownerWallet: nft.owner.wallet,
+        collection: nft.collection,
+        listing: listing
+          ? {
+              price: Number(listing.price),
+              currency: listing.currency,
+              listedAt: listing.listedAt,
+            }
+          : null,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        nfts: data,
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Get marketplace NFTs error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch marketplace NFTs",
+    });
+  }
+}
+
 export async function getMarketplaceStats(_req: Request, res: Response) {
   try {
-    const [totalCollections, totalNFTs, totalCreators] = await Promise.all([
+    const periodStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [
+      totalCollections,
+      totalNFTs,
+      totalCreators,
+      salesVolume,
+      previousCollections,
+      previousNFTs,
+      previousCreators,
+      previousSalesVolume,
+    ] = await Promise.all([
       prisma.collection.count(),
       prisma.nFT.count(),
       prisma.user.count({
@@ -12,14 +279,59 @@ export async function getMarketplaceStats(_req: Request, res: Response) {
           OR: [{ createdNFTs: { some: {} } }, { collections: { some: {} } }],
         },
       }),
+      prisma.sale.aggregate({
+        where: { currency: "SOL" },
+        _sum: { price: true },
+      }),
+      prisma.collection.count({
+        where: { createdAt: { lt: periodStart } },
+      }),
+      prisma.nFT.count({
+        where: { createdAt: { lt: periodStart } },
+      }),
+      prisma.user.count({
+        where: {
+          createdAt: { lt: periodStart },
+          OR: [
+            { createdNFTs: { some: { createdAt: { lt: periodStart } } } },
+            { collections: { some: { createdAt: { lt: periodStart } } } },
+          ],
+        },
+      }),
+      prisma.sale.aggregate({
+        where: {
+          currency: "SOL",
+          createdAt: { lt: periodStart },
+        },
+        _sum: { price: true },
+      }),
     ]);
+
+    const totalVolume = Number(salesVolume._sum.price ?? 0);
+    const previousVolume = Number(previousSalesVolume._sum.price ?? 0);
+    const growthPercent = (current: number, previous: number) =>
+      previous === 0
+        ? current === 0
+          ? 0
+          : null
+        : ((current - previous) / previous) * 100;
 
     res.status(200).json({
       success: true,
       data: {
+        totalVolume,
         totalCollections,
         totalNFTs,
         totalCreators,
+        growth: {
+          totalVolume: growthPercent(totalVolume, previousVolume),
+          totalCollections: growthPercent(
+            totalCollections,
+            previousCollections,
+          ),
+          totalNFTs: growthPercent(totalNFTs, previousNFTs),
+          totalCreators: growthPercent(totalCreators, previousCreators),
+        },
       },
     });
   } catch (error) {

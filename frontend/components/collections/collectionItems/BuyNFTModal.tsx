@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import {
-  FaExclamationCircle,
   FaShoppingBag,
   FaSpinner,
   FaTimes,
@@ -25,6 +24,7 @@ import {
   useCurrentUser,
 } from "@/hooks/use-current-user";
 import { authenticateWalletSession } from "@/lib/auth";
+import { useNotify } from "@/components/providers/notification-provider";
 import type { NFTItem } from "./collectionItemsData";
 
 interface BuyNFTModalProps {
@@ -42,7 +42,6 @@ export default function BuyNFTModal({
   onClose,
   onSuccess,
 }: BuyNFTModalProps) {
-  const [error, setError] = useState("");
   const [isBuying, setIsBuying] = useState(false);
   const [isSavingBackend, setIsSavingBackend] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -65,6 +64,7 @@ export default function BuyNFTModal({
     connected && currentUser?.wallet === buyerWallet;
   const { buyNFT } = useBuyNFTOnChain();
   const completePurchase = useBuyNFT();
+  const notify = useNotify();
 
   useEffect(() => {
     if (!buyerWallet) {
@@ -82,14 +82,14 @@ export default function BuyNFTModal({
 
   const handleAuthenticate = async () => {
     if (!connected || !publicKey || !signMessage) {
-      setError(
+      notify(
         "Connect a wallet that supports message signing to authenticate and save this purchase.",
+        "error",
       );
       return;
     }
 
     setIsAuthenticating(true);
-    setError("");
 
     try {
       const user = await authenticateWalletSession(
@@ -101,12 +101,13 @@ export default function BuyNFTModal({
       setWalletAuthenticated(true);
     } catch (authError) {
       setWalletAuthenticated(false);
-      setError(
+      notify(
         axios.isAxiosError(authError)
           ? authError.response?.data?.message || authError.message
           : authError instanceof Error
             ? authError.message
             : "Wallet authentication failed.",
+        "error",
       );
     } finally {
       setIsAuthenticating(false);
@@ -171,26 +172,26 @@ export default function BuyNFTModal({
   // };
 
   const handlePurchase = async () => {
-    setError("");
     setAuthenticationRequired(false);
     setWalletAuthenticated(false);
 
     if (!connected || !buyerWallet) {
-      setError("Connect your wallet before continuing.");
+      notify("Connect your wallet before continuing.", "error");
       return;
     }
 
     if (!isWalletVerified) {
       setAuthenticationRequired(true);
-      setError("Verify your wallet before continuing with a purchase.");
+      notify("Verify your wallet before continuing with a purchase.", "error");
       return;
     }
 
     let signature = transactionSignature;
 
     if (signature && transactionWallet !== buyerWallet) {
-      setError(
+      notify(
         "This pending purchase belongs to a different wallet. Reconnect the original buyer wallet.",
+        "error",
       );
       return;
     }
@@ -201,14 +202,15 @@ export default function BuyNFTModal({
       // Execute the blockchain purchase only once.
       if (!signature) {
         if (!nft.mintAddress) {
-          setError(
+          notify(
             "NFT mint address is missing. Please refresh and try again.",
+            "error",
           );
           return;
         }
 
         if (nft.price === null || nft.price <= 0) {
-          setError("This NFT does not have a valid listing price.");
+          notify("This NFT does not have a valid listing price.", "error");
           return;
         }
 
@@ -242,6 +244,7 @@ export default function BuyNFTModal({
       setTransactionSignature("");
       setTransactionWallet("");
 
+      notify("NFT purchased successfully.", "success");
       onSuccess();
     } catch (err) {
       const message = axios.isAxiosError(err)
@@ -255,10 +258,11 @@ export default function BuyNFTModal({
 
       setAuthenticationRequired(requiresAuth);
 
-      setError(
+      notify(
         signature && !requiresAuth
           ? `${message} Your on-chain purchase is already confirmed. Retry saving it without submitting another purchase.`
           : message,
+        "error",
       );
     } finally {
       setIsBuying(false);
@@ -358,16 +362,6 @@ export default function BuyNFTModal({
               <p className="mt-1 break-all text-[11px] text-slate-400">
                 {transactionSignature}
               </p>
-            </div>
-          )}
-
-          {error && (
-            <div
-              role="alert"
-              className="flex gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.08] p-3 text-xs leading-5 text-red-300"
-            >
-              <FaExclamationCircle className="mt-0.5 shrink-0" />
-              <span>{error}</span>
             </div>
           )}
 

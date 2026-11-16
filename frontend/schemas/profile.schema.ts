@@ -1,9 +1,15 @@
 import { z } from "zod";
 
-const optionalUrl = z.union([
-  z.literal(""),
-  z.string().trim().url("Enter a valid URL"),
-]);
+const httpUrl = z
+  .string()
+  .trim()
+  .url("Enter a valid URL")
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  }, "URL must use HTTP or HTTPS");
+
+const optionalUrl = z.union([z.literal(""), httpUrl]);
 
 export const profileSchema = z.object({
   username: z

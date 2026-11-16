@@ -15,6 +15,7 @@ import {
 import { api } from "@/lib/axios";
 import { authenticateWalletSession } from "@/lib/auth";
 import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
+import { useNotify } from "@/components/providers/notification-provider";
 
 const navLinks = [
   { name: "Explore", href: "/" },
@@ -27,10 +28,10 @@ export default function Navbar() {
   const { publicKey, connected, disconnect, signMessage } = useWallet();
   const { setVisible } = useWalletModal();
   const queryClient = useQueryClient();
+  const notify = useNotify();
 
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
   const [verifyOnConnect, setVerifyOnConnect] = useState(false);
 
   const walletAddress = publicKey?.toBase58();
@@ -43,25 +44,27 @@ export default function Navbar() {
 
   async function authenticateWallet() {
     if (!walletAddress || !signMessage) {
-      setAuthError(
+      notify(
         "This wallet does not support message signing. Try another compatible wallet.",
+        "error",
       );
       return;
     }
 
     setAuthLoading(true);
-    setAuthError("");
 
     try {
       const user = await authenticateWalletSession(walletAddress, signMessage);
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
+      notify("Wallet verified successfully.", "success");
     } catch (error) {
-      setAuthError(
+      notify(
         axios.isAxiosError<{ message?: string }>(error)
           ? (error.response?.data?.message ?? error.message)
           : error instanceof Error
             ? error.message
             : "Wallet authentication failed.",
+        "error",
       );
     } finally {
       setAuthLoading(false);
@@ -69,6 +72,8 @@ export default function Navbar() {
   }
 
   async function handleDisconnect() {
+    let sessionEnded = false;
+
     try {
       // Clear the backend session cookie.
       const response = await api.post<{ success: boolean }>(
@@ -78,15 +83,17 @@ export default function Navbar() {
       if (!response.data.success) {
         throw new Error("Unable to end the server session.");
       }
-      setAuthError("");
+      sessionEnded = true;
     } catch {
-      setAuthError("Could not end the server session. Please try again.");
+      notify("Could not end the server session. Please try again.", "error");
     } finally {
       try {
         await disconnect();
+        if (sessionEnded) notify("Wallet disconnected.", "success");
       } catch (error) {
-        setAuthError(
+        notify(
           error instanceof Error ? error.message : "Failed to disconnect wallet.",
+          "error",
         );
       } finally {
         setAccountMenuOpen(false);
@@ -209,14 +216,6 @@ export default function Navbar() {
                       </button>
                     )}
 
-                    {authError && (
-                      <p
-                        role="alert"
-                        className="mt-2 break-words text-xs text-red-400"
-                      >
-                        {authError}
-                      </p>
-                    )}
                   </div>
 
                   <button
@@ -229,11 +228,6 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-          )}
-          {!connected && authError && (
-            <p role="alert" className="max-w-48 text-xs text-red-400">
-              {authError}
-            </p>
           )}
         </div>
       </nav>

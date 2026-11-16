@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { NotificationProvider } from "@/components/providers/notification-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,8 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <AppWalletProvider>
           <QueryProvider>
-            <Navbar />
-            {children}
+            <NotificationProvider>
+              <Navbar />
+              {children}
+            </NotificationProvider>
           </QueryProvider>
         </AppWalletProvider>
       </body>

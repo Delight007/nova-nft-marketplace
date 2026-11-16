@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import WalletVerificationModal from "@/components/wallet/walletVerificationModal";
 import ProfileEditModal from "@/components/profile/profileEdithModal";
+import { useNotify } from "@/components/providers/notification-provider";
 import CreateNftDetails from "./createNftDetails";
 import NftPreview from "./createNftReview";
 import CreateSteps from "./createSteps";
@@ -43,6 +44,7 @@ export default function CreatePage() {
     getServerHydrationSnapshot,
   );
   const router = useRouter();
+  const notify = useNotify();
   const { connected, publicKey, wallet } = useWallet();
   const walletAddress = publicKey?.toBase58();
   const { data: currentUser } = useCurrentUser(
@@ -77,8 +79,6 @@ export default function CreatePage() {
   const [royalty, setRoyalty] = useState("5");
 
   const [externalUrl, setExternalUrl] = useState("");
-
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [traits, setTraits] = useState<Trait[]>([
     {
@@ -268,7 +268,6 @@ export default function CreatePage() {
   // };
 
   const handleMint = async () => {
-    setSuccessMessage(null);
     setUploadError(null);
 
     if (!connected || !wallet) {
@@ -344,14 +343,16 @@ export default function CreatePage() {
           metadataUri: mintedNFT.metadataUri,
         });
       } catch {
-        setUploadError(
+        notify(
           `Your NFT was minted successfully, but we couldn't save its mint details to the database. Mint address: ${mintedNFT.mintAddress}`,
+          "error",
         );
         return;
       }
 
-      setSuccessMessage(
+      notify(
         `NFT minted successfully! Mint address: ${mintedNFT.mintAddress}`,
+        "success",
       );
 
       console.log(
@@ -359,8 +360,9 @@ export default function CreatePage() {
         mintedNFT.transactionSignature,
       );
     } catch (error) {
-      setUploadError(
+      notify(
         error instanceof Error ? error.message : "Failed to mint NFT.",
+        "error",
       );
     } finally {
       setIsUploading(false);
@@ -393,11 +395,6 @@ export default function CreatePage() {
 
             <CreateSteps />
           </div>
-          {successMessage && (
-            <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-400">
-              {successMessage}
-            </p>
-          )}
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)]">
             <UploadArtwork image={image} onImageChange={handleImageChange} />
             <CreateNftDetails

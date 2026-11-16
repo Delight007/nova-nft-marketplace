@@ -12,11 +12,13 @@ export const marketplaceActivityKeys = {
 
 export function useMarketplaceActivity(
   params: MarketplaceActivityParams = {},
+  options: { refetchInterval?: number } = {},
 ) {
   return useQuery({
     queryKey: marketplaceActivityKeys.list(params),
     queryFn: () => getMarketplaceActivity(params),
-    staleTime: 30_000,
+    staleTime: options.refetchInterval ?? 30_000,
+    refetchInterval: options.refetchInterval,
     retry: false,
   });
 }

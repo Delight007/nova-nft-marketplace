@@ -3,12 +3,12 @@
 import axios from "axios";
 import { useState } from "react";
 import {
-  FaExclamationCircle,
   FaSpinner,
   FaTimes,
   FaTrashAlt,
 } from "react-icons/fa";
 
+import { useNotify } from "@/components/providers/notification-provider";
 import { useCancelListingOnChain } from "@/hooks/use-cancel-listing-on-chain";
 import { useCancelNFTListing } from "@/hooks/use-cancel-nft-listing";
 import type { CollectedNFT } from "@/services/user";
@@ -25,17 +25,16 @@ export default function CancelListingModal({
   onClose,
   onSuccess,
 }: CancelListingModalProps) {
-  const [error, setError] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
   const [isSavingBackend, setIsSavingBackend] = useState(false);
   const [transactionSignature, setTransactionSignature] = useState("");
+  const notify = useNotify();
 
   const { cancelListing } = useCancelListingOnChain();
   const cancelListingMutation = useCancelNFTListing();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
 
     // Keep the current signature locally to avoid stale React state.
     let signature = transactionSignature;
@@ -66,10 +65,11 @@ export default function CancelListingModal({
           ? err.message
           : "Something went wrong while cancelling your listing.";
 
-      setError(
+      notify(
         signature
           ? `${message} Your on-chain cancellation is already confirmed. Retry saving it without submitting another transaction.`
           : message,
+        "error",
       );
     } finally {
       setIsCancelling(false);
@@ -155,16 +155,6 @@ export default function CancelListingModal({
               <p className="mt-1 break-all text-[11px] text-slate-400">
                 {transactionSignature}
               </p>
-            </div>
-          )}
-
-          {error && (
-            <div
-              role="alert"
-              className="flex gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.08] p-3 text-xs leading-5 text-red-300"
-            >
-              <FaExclamationCircle className="mt-0.5 shrink-0" />
-              <span>{error}</span>
             </div>
           )}
 

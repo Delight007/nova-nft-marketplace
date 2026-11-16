@@ -1,7 +1,16 @@
 import { z } from "zod";
 
+const httpUrl = z
+  .string()
+  .trim()
+  .url("Enter a valid URL")
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  }, "URL must use HTTP or HTTPS");
+
 const optionalUrl = z
-  .union([z.literal(""), z.string().trim().url("Enter a valid URL")])
+  .union([z.literal(""), httpUrl])
   .optional()
   .transform((value) => (value ? value : null));
 

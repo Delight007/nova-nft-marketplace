@@ -27,7 +27,7 @@ import {
   profileSchema,
   type ProfileFormValues,
 } from "@/schemas/profile.schema";
-import { getProfileErrorMessage } from "@/services/user";
+import { useNotify } from "@/components/providers/notification-provider";
 
 type Props = {
   onClose: () => void;
@@ -90,6 +90,7 @@ function StatCard({
 export default function ProfileEditModal({ onClose }: Props) {
   const { data: profile } = useMyProfile();
   const updateProfile = useUpdateMyProfile();
+  const notify = useNotify();
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -228,10 +229,12 @@ export default function ProfileEditModal({ onClose }: Props) {
         discord: values.discord,
       });
 
+      notify("Profile updated successfully.", "success");
       onClose();
     } catch (error) {
-      setUploadError(
+      notify(
         error instanceof Error ? error.message : "Unable to save your profile.",
+        "error",
       );
     } finally {
       setIsUploading(false);
@@ -653,15 +656,6 @@ export default function ProfileEditModal({ onClose }: Props) {
                 {uploadError}
               </div>
             )}
-            {updateProfile.isError && (
-              <div
-                role="alert"
-                className="rounded-xl border border-red-500/20 bg-red-500/[0.08] p-4 text-sm text-red-300"
-              >
-                {getProfileErrorMessage(updateProfile.error)}
-              </div>
-            )}
-
             {/* Footer */}
             <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-end">
               <button
